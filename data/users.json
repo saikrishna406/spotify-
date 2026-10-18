@@ -1,0 +1,192 @@
+[
+  {
+    "id": "usr-1",
+    "username": "sai",
+    "displayName": "Sai Krishna",
+    "avatarUrl": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80",
+    "passwordHash": "$2a$10$rReg8cPzHYN6CTlTcx7mhe7u2Qq/ix1RGl4Gw6EDEiPz0NZD.34pq",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-sai-1",
+        "name": "Sai Krishna's Favorites",
+        "description": "Personal favorites created by Sai Krishna",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.463Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-2",
+    "username": "de",
+    "displayName": "Developer (Admin)",
+    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80",
+    "passwordHash": "$2a$10$UJ5o.5Q65UyzFxI6DIV.EuTpsniZtw/ZmvozE0MNJWiPIAdUqVDn6",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-de-1",
+        "name": "Developer (Admin)'s Favorites",
+        "description": "Personal favorites created by Developer (Admin)",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.529Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-3",
+    "username": "rahul",
+    "displayName": "Rahul Sharma",
+    "avatarUrl": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&q=80",
+    "passwordHash": "$2a$10$v.o32d3kfYcvNw7elqLRw.HJjdbRUjwiEJoaPl6G8oeeiGQCY/J0u",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-rahul-1",
+        "name": "Rahul Sharma's Favorites",
+        "description": "Personal favorites created by Rahul Sharma",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.593Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-4",
+    "username": "priya",
+    "displayName": "Priya Reddy",
+    "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
+    "passwordHash": "$2a$10$RKECOqcNCq4BBedZkcaLqOSRS.kBWsGXle.sjo5DYszInocpjtise",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-priya-1",
+        "name": "Priya Reddy's Favorites",
+        "description": "Personal favorites created by Priya Reddy",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.656Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-5",
+    "username": "karthik",
+    "displayName": "Karthik Raja",
+    "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
+    "passwordHash": "$2a$10$uSCH2TwB/7X2aL0d3J6Y2.F4fDXJwx7aT1B7YYHMQBXPjRCKWdRtO",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-karthik-1",
+        "name": "Karthik Raja's Favorites",
+        "description": "Personal favorites created by Karthik Raja",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.718Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-6",
+    "username": "ananya",
+    "displayName": "Ananya Iyer",
+    "avatarUrl": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80",
+    "passwordHash": "$2a$10$Vf0.gvV/YuR/vQCHUYKkNekdEfXO3.2Peg.1TIwRVwBctUb8kt88q",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-ananya-1",
+        "name": "Ananya Iyer's Favorites",
+        "description": "Personal favorites created by Ananya Iyer",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.780Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-7",
+    "username": "vikram",
+    "displayName": "Vikram Seth",
+    "avatarUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80",
+    "passwordHash": "$2a$10$zlRVQIhAsyx9emiedAxMAupaTeWEEeYVnjTQ/waGq1zRc6PHZMCB.",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-vikram-1",
+        "name": "Vikram Seth's Favorites",
+        "description": "Personal favorites created by Vikram Seth",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.841Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-8",
+    "username": "sneha",
+    "displayName": "Sneha Patel",
+    "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80",
+    "passwordHash": "$2a$10$P29lxKioZzl4x37fZ4HT4uaO4LnG/A3C0G8BTE9x/8YU8mOTDnJdO",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-sneha-1",
+        "name": "Sneha Patel's Favorites",
+        "description": "Personal favorites created by Sneha Patel",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.905Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-9",
+    "username": "suresh",
+    "displayName": "Suresh Kumar",
+    "avatarUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80",
+    "passwordHash": "$2a$10$5bwA0OvZ2rz07Rodlba4XunuX3AbNyDCNpNbbaLAtZIPicnlssGTa",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-suresh-1",
+        "name": "Suresh Kumar's Favorites",
+        "description": "Personal favorites created by Suresh Kumar",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:10.967Z"
+      }
+    ]
+  },
+  {
+    "id": "usr-10",
+    "username": "meera",
+    "displayName": "Meera Nair",
+    "avatarUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&q=80",
+    "passwordHash": "$2a$10$tlPM9JH6GDiJ1tYYAfuTwOtVp2sgz0f4eY3Ib.AKmGOwKTq.htM3.",
+    "likedSongIds": [],
+    "likedSongsData": [],
+    "playlists": [
+      {
+        "id": "pl-meera-1",
+        "name": "Meera Nair's Favorites",
+        "description": "Personal favorites created by Meera Nair",
+        "trackIds": [],
+        "tracks": [],
+        "createdAt": "2026-10-18T15:14:11.029Z"
+      }
+    ]
+  }
+]
