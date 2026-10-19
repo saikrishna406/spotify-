@@ -14,18 +14,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 });
     }
 
+    const trimmedInput = username.trim();
+
     // 1. If Supabase is configured, register via Supabase Auth
     if (isSupabaseConfigured()) {
       const supabase = createSupabaseServerClient();
       if (supabase) {
-        const email = username.includes('@') ? username : `${username.toLowerCase().trim()}@musicapp.local`;
+        const email = trimmedInput.includes('@')
+          ? trimmedInput.toLowerCase()
+          : `${trimmedInput.toLowerCase()}@musicapp.com`;
+
+        const cleanUsername = trimmedInput.includes('@')
+          ? trimmedInput.split('@')[0]
+          : trimmedInput.toLowerCase();
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              username: username.toLowerCase().trim(),
-              display_name: displayName || username
+              username: cleanUsername,
+              display_name: displayName || cleanUsername
             }
           }
         });
@@ -35,14 +44,49 @@ export async function POST(req: NextRequest) {
         }
 
         if (data.user) {
-          const userProfile = await getSupabaseUser(data.user.id);
-          return NextResponse.json({ success: true, user: userProfile });
+          // Wait briefly for trigger execution if needed
+          let userProfile = await getSupabaseUser(data.user.id);
+          if (!userProfile) {
+            await new Promise(r => setTimeout(r, 400));
+            userProfile = await getSupabaseUser(data.user.id);
+          }
+
+          if (userProfile) {
+            const token = signUserToken({ id: userProfile.id, username: userProfile.username });
+            const res = NextResponse.json({
+              success: true,
+              user: userProfile,
+              sessionActive: !!data.session
+            });
+            res.cookies.set('auth_token', token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 30 * 24 * 60 * 60,
+              path: '/'
+            });
+            return res;
+          }
+
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: data.user.id,
+              username: cleanUsername,
+              displayName: displayName || cleanUsername,
+              avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
+              likedSongIds: [],
+              likedSongsData: [],
+              playlists: []
+            },
+            sessionActive: !!data.session
+          });
         }
       }
     }
 
     // 2. Fallback to local accounts
-    const newUser = registerNewUser(username, password, displayName);
+    const newUser = registerNewUser(trimmedInput, password, displayName);
     const token = signUserToken(newUser);
     const { passwordHash, ...safeUser } = newUser;
 

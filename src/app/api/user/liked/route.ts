@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
 import { toggleLikedSong, toggleSupabaseLikedSong, findUserByUsername } from '@/lib/db';

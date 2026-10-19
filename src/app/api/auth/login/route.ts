@@ -10,26 +10,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
+    const trimmedInput = username.trim();
+
     // 1. If Supabase is configured, authenticate via Supabase Auth
     if (isSupabaseConfigured()) {
       const supabase = createSupabaseServerClient();
       if (supabase) {
-        // Support email or auto-generated email format for username
-        const email = username.includes('@') ? username : `${username.toLowerCase()}@musicapp.local`;
+        const email = trimmedInput.includes('@')
+          ? trimmedInput.toLowerCase()
+          : `${trimmedInput.toLowerCase()}@musicapp.com`;
+
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
 
-        if (!error && data.user) {
+        if (error) {
+          if (error.message.includes('Email not confirmed')) {
+            return NextResponse.json({
+              error: 'Please confirm your email address, or disable "Confirm email" in Supabase Dashboard (Authentication -> Providers -> Email -> uncheck "Confirm email").'
+            }, { status: 403 });
+          }
+          // If login failed with generated email, attempt fallback to local accounts if available
+          console.warn('Supabase login notice:', error.message);
+        } else if (data.user) {
           const userProfile = await getSupabaseUser(data.user.id);
-          return NextResponse.json({ success: true, user: userProfile });
+          if (userProfile) {
+            const token = signUserToken({ id: userProfile.id, username: userProfile.username });
+            const res = NextResponse.json({ success: true, user: userProfile });
+            res.cookies.set('auth_token', token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 30 * 24 * 60 * 60,
+              path: '/'
+            });
+            return res;
+          }
         }
       }
     }
 
-    // 2. Fallback to local accounts
-    const user = findUserByUsername(username);
+    // 2. Fallback to local accounts (e.g. 10 seed friends)
+    const user = findUserByUsername(trimmedInput);
     if (!user) {
       return NextResponse.json({ error: 'User not found. Use one of the 10 friend profiles or register.' }, { status: 404 });
     }

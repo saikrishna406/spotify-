@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
 import { getAllUsersSafe, findUserByUsername } from '@/lib/db';
