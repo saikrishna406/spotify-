@@ -1,3 +1,4 @@
+import { isSupabaseConfigured, createClient as createSupabaseServerClient } from './supabase/server';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -195,4 +196,167 @@ export function addTrackToUserPlaylist(userId: string, playlistId: string, track
     saveUsers(users);
   }
   return pl;
+}
+
+// ==========================================
+// SUPABASE DATABASE OPERATIONS
+// ==========================================
+
+export async function getSupabaseUser(userId: string): Promise<User | null> {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const supabase = createSupabaseServerClient();
+    if (!supabase) return null;
+
+    // 1. Fetch Profile
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profileErr || !profile) return null;
+
+    // 2. Fetch Liked Songs
+    const { data: likedRows } = await supabase
+      .from('liked_songs')
+      .select('track_id, track_data')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const likedSongIds = (likedRows || []).map(r => r.track_id);
+    const likedSongsData = (likedRows || []).map(r => r.track_data as Track);
+
+    // 3. Fetch Playlists with Tracks
+    const { data: playlists } = await supabase
+      .from('playlists')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const userPlaylists: UserPlaylist[] = [];
+    if (playlists) {
+      for (const pl of playlists) {
+        const { data: trackRows } = await supabase
+          .from('playlist_tracks')
+          .select('track_id, track_data')
+          .eq('playlist_id', pl.id)
+          .order('position', { ascending: true });
+
+        userPlaylists.push({
+          id: pl.id,
+          name: pl.name,
+          description: pl.description || '',
+          trackIds: (trackRows || []).map(t => t.track_id),
+          tracks: (trackRows || []).map(t => t.track_data as Track),
+          createdAt: pl.created_at
+        });
+      }
+    }
+
+    return {
+      id: profile.id,
+      username: profile.username,
+      displayName: profile.display_name || profile.username,
+      avatarUrl: profile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
+      likedSongIds,
+      likedSongsData,
+      playlists: userPlaylists
+    };
+  } catch (err) {
+    console.error('getSupabaseUser error:', err);
+    return null;
+  }
+}
+
+export async function toggleSupabaseLikedSong(userId: string, track: Track): Promise<{ isLiked: boolean; user: User }> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) throw new Error('Supabase client not initialized');
+
+  // Check if already liked
+  const { data: existing } = await supabase
+    .from('liked_songs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('track_id', track.id)
+    .maybeSingle();
+
+  let isLiked = false;
+  if (existing) {
+    await supabase.from('liked_songs').delete().eq('id', existing.id);
+    isLiked = false;
+  } else {
+    await supabase.from('liked_songs').insert({
+      user_id: userId,
+      track_id: track.id,
+      track_data: track
+    });
+    isLiked = true;
+  }
+
+  const user = await getSupabaseUser(userId);
+  if (!user) throw new Error('Failed to reload user from Supabase');
+  return { isLiked, user };
+}
+
+export async function createSupabasePlaylist(userId: string, name: string, description = ''): Promise<UserPlaylist> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) throw new Error('Supabase client not initialized');
+
+  const { data: pl, error } = await supabase
+    .from('playlists')
+    .insert({
+      user_id: userId,
+      name,
+      description
+    })
+    .select()
+    .single();
+
+  if (error || !pl) throw new Error(error?.message || 'Failed to create playlist');
+
+  return {
+    id: pl.id,
+    name: pl.name,
+    description: pl.description || '',
+    trackIds: [],
+    tracks: [],
+    createdAt: pl.created_at
+  };
+}
+
+export async function addTrackToSupabasePlaylist(userId: string, playlistId: string, track: Track): Promise<UserPlaylist> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) throw new Error('Supabase client not initialized');
+
+  // Add track to playlist_tracks
+  await supabase
+    .from('playlist_tracks')
+    .insert({
+      playlist_id: playlistId,
+      track_id: track.id,
+      track_data: track
+    });
+
+  // Re-fetch playlist
+  const { data: pl } = await supabase
+    .from('playlists')
+    .select('*')
+    .eq('id', playlistId)
+    .single();
+
+  const { data: trackRows } = await supabase
+    .from('playlist_tracks')
+    .select('track_id, track_data')
+    .eq('playlist_id', playlistId)
+    .order('position', { ascending: true });
+
+  return {
+    id: pl.id,
+    name: pl.name,
+    description: pl.description || '',
+    trackIds: (trackRows || []).map(t => t.track_id),
+    tracks: (trackRows || []).map(t => t.track_data as Track),
+    createdAt: pl.created_at
+  };
 }

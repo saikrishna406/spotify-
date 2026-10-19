@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
-import { createUserPlaylist, addTrackToUserPlaylist, findUserByUsername } from '@/lib/db';
+import { createUserPlaylist, addTrackToUserPlaylist, createSupabasePlaylist, addTrackToSupabasePlaylist, findUserByUsername } from '@/lib/db';
+import { isSupabaseConfigured } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
@@ -39,6 +40,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, description } = await req.json();
+
+    if (isSupabaseConfigured() && user.id.includes('-') && user.id.length > 20) {
+      const playlist = await createSupabasePlaylist(user.id, name, description);
+      return NextResponse.json({ success: true, playlist });
+    }
+
     const playlist = createUserPlaylist(user.id, name, description);
     return NextResponse.json({ success: true, playlist });
   } catch (err: any) {
@@ -64,6 +71,11 @@ export async function PUT(req: NextRequest) {
     const { playlistId, track } = await req.json();
     if (!playlistId || !track) {
       return NextResponse.json({ error: 'playlistId and track required' }, { status: 400 });
+    }
+
+    if (isSupabaseConfigured() && user.id.includes('-') && user.id.length > 20) {
+      const updated = await addTrackToSupabasePlaylist(user.id, playlistId, track);
+      return NextResponse.json({ success: true, playlist: updated });
     }
 
     const updated = addTrackToUserPlaylist(user.id, playlistId, track);

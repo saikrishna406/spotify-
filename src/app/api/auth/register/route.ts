@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { registerNewUser } from '@/lib/db';
+import { registerNewUser, getSupabaseUser } from '@/lib/db';
 import { signUserToken } from '@/lib/auth';
+import { isSupabaseConfigured, createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 });
     }
 
+    // 1. If Supabase is configured, register via Supabase Auth
+    if (isSupabaseConfigured()) {
+      const supabase = createSupabaseServerClient();
+      if (supabase) {
+        const email = username.includes('@') ? username : `${username.toLowerCase().trim()}@musicapp.local`;
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username.toLowerCase().trim(),
+              display_name: displayName || username
+            }
+          }
+        });
+
+        if (error) {
+          return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+
+        if (data.user) {
+          const userProfile = await getSupabaseUser(data.user.id);
+          return NextResponse.json({ success: true, user: userProfile });
+        }
+      }
+    }
+
+    // 2. Fallback to local accounts
     const newUser = registerNewUser(username, password, displayName);
     const token = signUserToken(newUser);
     const { passwordHash, ...safeUser } = newUser;

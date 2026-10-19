@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByUsername, verifyUserPassword } from '@/lib/db';
+import { findUserByUsername, verifyUserPassword, getSupabaseUser } from '@/lib/db';
 import { signUserToken } from '@/lib/auth';
+import { isSupabaseConfigured, createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +10,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
+    // 1. If Supabase is configured, authenticate via Supabase Auth
+    if (isSupabaseConfigured()) {
+      const supabase = createSupabaseServerClient();
+      if (supabase) {
+        // Support email or auto-generated email format for username
+        const email = username.includes('@') ? username : `${username.toLowerCase()}@musicapp.local`;
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (!error && data.user) {
+          const userProfile = await getSupabaseUser(data.user.id);
+          return NextResponse.json({ success: true, user: userProfile });
+        }
+      }
+    }
+
+    // 2. Fallback to local accounts
     const user = findUserByUsername(username);
     if (!user) {
       return NextResponse.json({ error: 'User not found. Use one of the 10 friend profiles or register.' }, { status: 404 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
-import { toggleLikedSong, findUserByUsername } from '@/lib/db';
+import { toggleLikedSong, toggleSupabaseLikedSong, findUserByUsername } from '@/lib/db';
+import { isSupabaseConfigured } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
@@ -44,6 +45,11 @@ export async function POST(req: NextRequest) {
     const { track } = await req.json();
     if (!track || !track.id) {
       return NextResponse.json({ error: 'Track required' }, { status: 400 });
+    }
+
+    if (isSupabaseConfigured() && user.id.includes('-') && user.id.length > 20) {
+      const result = await toggleSupabaseLikedSong(user.id, track);
+      return NextResponse.json(result);
     }
 
     const result = toggleLikedSong(user.id, track);
