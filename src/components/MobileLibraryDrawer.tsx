@@ -99,7 +99,14 @@ export default function MobileLibraryDrawer({
                   onClick={() => {
                     onClose();
                     if (onSelectPlaylist) {
-                      onSelectPlaylist(pl);
+                      onSelectPlaylist({
+                        id: pl.id,
+                        name: pl.name,
+                        description: pl.description || 'User created playlist',
+                        image: pl.image || pl.tracks[0]?.image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=500&q=80',
+                        owner: user?.displayName || 'User',
+                        tracks: pl.tracks
+                      });
                     } else if (pl.tracks.length > 0) {
                       playTrack(pl.tracks[0], pl.tracks);
                     }

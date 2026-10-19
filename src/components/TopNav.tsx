@@ -29,7 +29,6 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
   }, []);
 
   return (
-  return (
     <header className="h-14 sm:h-16 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-20 bg-spotify-base/90 backdrop-blur-md">
       {/* Mobile Spotify Logo */}
       <Link href="/" className="flex sm:hidden items-center gap-1 shrink-0 text-white" title="Spotify Home">
