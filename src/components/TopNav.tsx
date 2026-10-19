@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Home, Search, Bell, Download, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Search, Bell, Download, ExternalLink, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface TopNavProps {
@@ -13,11 +13,10 @@ interface TopNavProps {
 
 export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout, openAuthModal } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -82,88 +81,104 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
 
       {/* Right Action Items */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        <button className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-white text-black font-bold text-sm rounded-full hover:scale-105 transition shadow">
-          <span>Explore Premium</span>
-        </button>
+        {user ? (
+          /* LOGGED IN USER ACTIONS */
+          <>
+            <button className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-white text-black font-bold text-sm rounded-full hover:scale-105 transition shadow">
+              <span>Explore Premium</span>
+            </button>
 
-        <button className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-white hover:scale-105 transition">
-          <Download className="w-4 h-4" />
-          <span>Install App</span>
-        </button>
+            <button className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-white hover:scale-105 transition">
+              <Download className="w-4 h-4" />
+              <span>Install App</span>
+            </button>
 
-        <button className="hidden sm:flex w-8 h-8 rounded-full hover:bg-white/10 items-center justify-center text-spotify-subdued hover:text-white transition">
-          <Bell className="w-4 h-4" />
-        </button>
+            <button className="hidden sm:flex w-8 h-8 rounded-full hover:bg-white/10 items-center justify-center text-spotify-subdued hover:text-white transition">
+              <Bell className="w-4 h-4" />
+            </button>
 
-        {/* User Profile Dropdown (Official Spotify Dropdown) */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-9 h-9 rounded-full bg-[#535353] hover:scale-105 flex items-center justify-center text-white font-bold text-sm transition shadow p-0.5"
-            title={user?.displayName || 'Profile'}
-          >
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span>{user?.displayName ? user.displayName[0].toUpperCase() : 'S'}</span>
-            )}
-          </button>
-
-          {/* Spotify Official Profile Menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 top-12 w-52 bg-[#282828] rounded-md shadow-2xl py-1 text-sm text-[#e0e0e0] z-50 border border-white/5 animate-fadeIn">
-              <div className="px-4 py-2.5 border-b border-[#3e3e3e] flex items-center gap-2.5">
-                {user?.avatarUrl && (
-                  <img src={user.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+            {/* User Profile Avatar Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-9 h-9 rounded-full bg-[#535353] hover:scale-105 flex items-center justify-center text-white font-bold text-sm transition shadow p-0.5 border border-white/20"
+                title={user.displayName || user.username}
+              >
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <span>{user.displayName ? user.displayName[0].toUpperCase() : user.username[0].toUpperCase()}</span>
                 )}
-                <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-white text-xs truncate">{user?.displayName || 'User'}</span>
-                  <span className="text-[11px] text-[#b3b3b3] truncate">@{user?.username || 'user'}</span>
+              </button>
+
+              {/* Profile Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-12 w-52 bg-[#282828] rounded-md shadow-2xl py-1 text-sm text-[#e0e0e0] z-50 border border-white/5 animate-fadeIn">
+                  <div className="px-4 py-2.5 border-b border-[#3e3e3e] flex items-center gap-2.5">
+                    {user.avatarUrl && (
+                      <img src={user.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-white text-xs truncate">{user.displayName || user.username}</span>
+                      <span className="text-[11px] text-[#b3b3b3] truncate">@{user.username}</span>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs flex items-center justify-between"
+                  >
+                    <span>Account</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-[#b3b3b3]" />
+                  </div>
+
+                  <div
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs"
+                  >
+                    <span>Profile</span>
+                  </div>
+
+                  <div
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs"
+                  >
+                    <span>Upgrade to Premium</span>
+                  </div>
+
+                  <div className="border-t border-[#3e3e3e] my-1" />
+
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs font-semibold flex items-center gap-2 text-red-400 hover:text-red-300"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log out</span>
+                  </button>
                 </div>
-              </div>
-
-              <Link
-                href="/login"
-                onClick={() => setIsDropdownOpen(false)}
-                className="flex items-center justify-between px-4 py-2.5 hover:bg-white/10 text-white transition text-xs font-semibold"
-              >
-                <span>Account</span>
-                <ExternalLink className="w-3.5 h-3.5 text-[#b3b3b3]" />
-              </Link>
-
-              <div
-                onClick={() => setIsDropdownOpen(false)}
-                className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs"
-              >
-                <span>Profile</span>
-              </div>
-
-              <div
-                onClick={() => setIsDropdownOpen(false)}
-                className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs"
-              >
-                <span>Upgrade to Premium</span>
-              </div>
-
-              <div
-                onClick={() => setIsDropdownOpen(false)}
-                className="px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs"
-              >
-                <span>Settings</span>
-              </div>
-
-              <div className="border-t border-[#3e3e3e] my-1" />
-
-              <Link
-                href="/login"
-                onClick={() => setIsDropdownOpen(false)}
-                className="block px-4 py-2 hover:bg-white/10 text-white cursor-pointer transition text-xs font-semibold"
-              >
-                Log in or switch account
-              </Link>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          /* GUEST VISITOR BUTTONS (Official Spotify Web Player Header) */
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => openAuthModal('register')}
+              className="text-[#a7a7a7] hover:text-white font-bold text-sm px-3 py-2 transition hover:scale-105"
+            >
+              Sign up
+            </button>
+            <button
+              onClick={() => openAuthModal('login')}
+              className="bg-white text-black font-bold text-sm px-6 sm:px-7 py-2.5 rounded-full hover:scale-105 transition shadow"
+            >
+              Log in
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

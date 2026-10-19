@@ -17,7 +17,7 @@ import { Play, Pause, Heart, ChevronRight, Clock } from 'lucide-react';
 
 export default function HomePage() {
   const { playTrack, togglePlay, state } = useAudio();
-  const { user, createPlaylist, isLiked, toggleLike } = useAuth();
+  const { user, createPlaylist, isLiked, toggleLike, openAuthModal } = useAuth();
 
   // Navigation / View State
   const [activeTab, setActiveTab] = useState<'all' | 'music' | 'podcasts'>('all');
@@ -109,6 +109,10 @@ export default function HomePage() {
   };
 
   const handleCreatePlaylistPrompt = async () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
     const name = prompt('Enter a name for your new playlist:', `My Playlist #${(user?.playlists.length || 0) + 1}`);
     if (name) {
       await createPlaylist(name);
@@ -116,6 +120,10 @@ export default function HomePage() {
   };
 
   const handleOpenLiked = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
     setSelectedPlaylist(null);
     setIsViewingLikedSongs(true);
   };

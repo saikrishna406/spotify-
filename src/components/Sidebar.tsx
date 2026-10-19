@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Library, Plus, Heart, Folder, Music, X } from 'lucide-react';
+import { Home, Search, Library, Plus, Heart, Music, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useAudio } from '@/context/AudioContext';
 
 interface SidebarProps {
   onCreatePlaylist: () => void;
@@ -14,9 +13,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const { playTrack } = useAudio();
-  const [showImportBanner, setShowImportBanner] = useState(true);
+  const { user, openAuthModal } = useAuth();
 
   return (
     <aside className="hidden md:flex w-[280px] lg:w-[300px] h-full flex-col gap-2 p-2 select-none shrink-0 text-white font-sans">
@@ -57,96 +54,102 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarP
       <div className="bg-spotify-base rounded-lg flex-1 flex flex-col p-3 overflow-hidden">
         {/* Library Header */}
         <div className="flex items-center justify-between px-2 py-1 mb-2">
-          <button className="flex items-center gap-3 text-spotify-subdued hover:text-white font-bold text-sm transition">
+          <div className="flex items-center gap-3 text-spotify-subdued font-bold text-sm">
             <Library className="w-6 h-6" />
             <span>Your Library</span>
-          </button>
-          <button
-            onClick={onCreatePlaylist}
-            className="p-1.5 rounded-full hover:bg-white/10 text-spotify-subdued hover:text-white transition flex items-center gap-1 text-xs font-semibold"
-            title="Create playlist"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Create</span>
-          </button>
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex gap-2 px-2 mb-3">
-          <button className="px-3 py-1 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold rounded-full transition">
-            Playlists
-          </button>
-        </div>
-
-        {/* Import Callout Banner (Matches Screenshot) */}
-        {showImportBanner && (
-          <div className="relative mb-3 p-4 rounded-xl bg-gradient-to-r from-[#201040] via-[#24124c] to-[#123630] border border-white/10 overflow-hidden shadow-lg">
+          </div>
+          {user && (
             <button
-              onClick={() => setShowImportBanner(false)}
-              className="absolute top-2 right-2 text-spotify-subdued hover:text-white p-1"
-              title="Dismiss"
+              onClick={onCreatePlaylist}
+              className="p-1.5 rounded-full hover:bg-white/10 text-spotify-subdued hover:text-white transition flex items-center gap-1 text-xs font-semibold"
+              title="Create playlist"
             >
-              <X className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Create</span>
             </button>
-            <h4 className="font-bold text-sm text-white mb-1">Import your music from other apps</h4>
-            <p className="text-xs text-spotify-subdued mb-3">Bring your playlists, songs and artists.</p>
-            <button className="px-4 py-1.5 bg-white text-black hover:scale-105 font-bold text-xs rounded-full transition shadow">
-              Import library
-            </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Scrollable Items */}
-        <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1 custom-scrollbar">
-          {/* Liked Songs Entry */}
-          <div
-            onClick={onOpenLikedSongs}
-            className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group"
-          >
-            <div className="w-12 h-12 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center shrink-0 shadow">
-              <Heart className="w-5 h-5 text-white fill-white" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-sm text-white truncate group-hover:text-spotify-green transition">
-                Liked Songs
-              </span>
-              <span className="text-xs text-spotify-subdued flex items-center gap-1.5">
-                <span className="text-spotify-green">📌</span> Playlist • {user?.likedSongIds.length || 0} songs
+        {user ? (
+          /* LOGGED IN USER LIBRARY ITEMS */
+          <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1 custom-scrollbar">
+            {/* Filter Pills */}
+            <div className="flex gap-2 px-1 mb-2">
+              <span className="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full">
+                Playlists
               </span>
             </div>
-          </div>
 
-          {/* User Custom Playlists */}
-          {user?.playlists.map((pl) => (
+            {/* Liked Songs Entry */}
             <div
-              key={pl.id}
+              onClick={onOpenLikedSongs}
               className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group"
             >
-              <div className="w-12 h-12 rounded bg-spotify-elevated flex items-center justify-center shrink-0 shadow">
-                <Music className="w-5 h-5 text-spotify-subdued" />
+              <div className="w-12 h-12 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center shrink-0 shadow">
+                <Heart className="w-5 h-5 text-white fill-white" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-semibold text-sm text-white truncate group-hover:text-spotify-green transition">
-                  {pl.name}
+                  Liked Songs
                 </span>
-                <span className="text-xs text-spotify-subdued truncate">
-                  Playlist • {user.displayName}
+                <span className="text-xs text-spotify-subdued flex items-center gap-1.5">
+                  <span className="text-spotify-green">📌</span> Playlist • {user.likedSongIds.length} songs
                 </span>
               </div>
             </div>
-          ))}
 
-          {/* New Folder (From Screenshot) */}
-          <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group">
-            <div className="w-12 h-12 rounded bg-spotify-card flex items-center justify-center shrink-0">
-              <Folder className="w-5 h-5 text-spotify-subdued" />
+            {/* User Custom Playlists */}
+            {user.playlists.map((pl) => (
+              <div
+                key={pl.id}
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group"
+              >
+                <div className="w-12 h-12 rounded bg-spotify-elevated flex items-center justify-center shrink-0 shadow">
+                  <Music className="w-5 h-5 text-spotify-subdued" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold text-sm text-white truncate group-hover:text-spotify-green transition">
+                    {pl.name}
+                  </span>
+                  <span className="text-xs text-spotify-subdued truncate">
+                    Playlist • {user.displayName}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* GUEST USER LIBRARY PROMPT (Official Spotify Guest Experience) */
+          <div className="flex-1 overflow-y-auto flex flex-col gap-4 py-2 custom-scrollbar">
+            {/* Card 1: Create your first playlist */}
+            <div className="p-4 rounded-lg bg-[#242424] flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="font-bold text-sm text-white">Create your first playlist</span>
+                <span className="text-xs text-spotify-subdued">It&apos;s easy, we&apos;ll help you</span>
+              </div>
+              <button
+                onClick={() => openAuthModal('login')}
+                className="self-start px-4 py-1.5 bg-white text-black text-xs font-bold rounded-full hover:scale-105 transition shadow"
+              >
+                Create playlist
+              </button>
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-sm text-white truncate">New Folder</span>
-              <span className="text-xs text-spotify-subdued">2 playlists</span>
+
+            {/* Card 2: Discover Podcasts */}
+            <div className="p-4 rounded-lg bg-[#242424] flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="font-bold text-sm text-white">Let&apos;s find some songs to save</span>
+                <span className="text-xs text-spotify-subdued">Sign up to build your personal music library</span>
+              </div>
+              <button
+                onClick={() => openAuthModal('register')}
+                className="self-start px-4 py-1.5 bg-white text-black text-xs font-bold rounded-full hover:scale-105 transition shadow"
+              >
+                Sign up free
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );

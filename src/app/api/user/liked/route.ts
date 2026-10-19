@@ -1,22 +1,15 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
-import { toggleLikedSong, toggleSupabaseLikedSong, findUserByUsername } from '@/lib/db';
+import { toggleLikedSong, toggleSupabaseLikedSong } from '@/lib/db';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    let user = await getCurrentUserFromCookies();
+    const user = await getCurrentUserFromCookies();
     if (!user) {
-      const defaultUser = findUserByUsername('sai');
-      if (defaultUser) {
-        const { passwordHash, ...safe } = defaultUser;
-        user = safe;
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ likedSongIds: [], likedSongsData: [] });
     }
 
     return NextResponse.json({
@@ -30,17 +23,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    let user = await getCurrentUserFromCookies();
+    const user = await getCurrentUserFromCookies();
     if (!user) {
-      const defaultUser = findUserByUsername('sai');
-      if (defaultUser) {
-        const { passwordHash, ...safe } = defaultUser;
-        user = safe;
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Please log in to save liked songs' }, { status: 401 });
     }
 
     const { track } = await req.json();

@@ -2,26 +2,29 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Track, UserPlaylist } from '@/types';
+import AuthModal from '@/components/AuthModal';
 
 interface AuthContextType {
   user: User | null;
-  allFriends: User[];
   isLoading: boolean;
   login: (username: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, pass: string, name?: string) => Promise<{ success: boolean; error?: string }>;
-  switchProfile: (username: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   toggleLike: (track: Track) => Promise<boolean>;
   createPlaylist: (name: string, desc?: string) => Promise<UserPlaylist | null>;
   addTrackToPlaylist: (playlistId: string, track: Track) => Promise<boolean>;
   isLiked: (trackId: string) => boolean;
+  openAuthModal: (mode?: 'login' | 'register') => void;
+  closeAuthModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [allFriends, setAllFriends] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
   const fetchSession = async () => {
     try {
@@ -29,10 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user || null);
-        setAllFriends(data.allFriends || []);
+      } else {
+        setUser(null);
       }
     } catch (err) {
       console.error('Session fetch error:', err);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +46,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchSession();
   }, []);
+
+  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
 
   const login = async (username: string, pass: string) => {
     try {
@@ -75,26 +89,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const switchProfile = async (username: string) => {
+  const logout = async () => {
     try {
-      const res = await fetch('/api/auth/switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      return false;
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
     }
+    setUser(null);
   };
 
   const toggleLike = async (track: Track): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      openAuthModal('login');
+      return false;
+    }
     try {
       const res = await fetch('/api/user/liked', {
         method: 'POST',
@@ -113,6 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createPlaylist = async (name: string, desc = ''): Promise<UserPlaylist | null> => {
+    if (!user) {
+      openAuthModal('login');
+      return null;
+    }
     try {
       const res = await fetch('/api/user/playlists', {
         method: 'POST',
@@ -133,6 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTrackToPlaylist = async (playlistId: string, track: Track): Promise<boolean> => {
+    if (!user) {
+      openAuthModal('login');
+      return false;
+    }
     try {
       const res = await fetch('/api/user/playlists', {
         method: 'PUT',
@@ -160,17 +176,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user,
-      allFriends,
       isLoading,
       login,
       register,
-      switchProfile,
+      logout,
       toggleLike,
       createPlaylist,
       addTrackToPlaylist,
-      isLiked
+      isLiked,
+      openAuthModal,
+      closeAuthModal
     }}>
       {children}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
+        initialTab={authModalMode}
+      />
     </AuthContext.Provider>
   );
 }

@@ -109,7 +109,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Email or username (e.g. sai)"
+              placeholder="Email or username"
               required
               className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#727272] hover:border-white focus:border-white focus:ring-1 focus:ring-white rounded text-sm text-white placeholder-[#727272] outline-none transition"
             />
@@ -124,7 +124,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (e.g. sai123)"
+                placeholder="Password"
                 required
                 className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#727272] hover:border-white focus:border-white focus:ring-1 focus:ring-white rounded text-sm text-white placeholder-[#727272] outline-none transition pr-10"
               />
@@ -164,7 +164,7 @@ export default function LoginPage() {
           {/* Forgot Password Link */}
           <div className="text-center mt-2">
             <span
-              onClick={() => alert('Default passwords for all 10 friends are <username>123 (e.g. sai123, rahul123, priya123).')}
+              onClick={() => alert('Please contact support or reset your password if you forgot your credentials.')}
               className="text-xs text-[#b3b3b3] hover:text-white underline cursor-pointer"
             >
               Forgot your password?

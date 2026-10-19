@@ -1,22 +1,15 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromCookies } from '@/lib/auth';
-import { createUserPlaylist, addTrackToUserPlaylist, createSupabasePlaylist, addTrackToSupabasePlaylist, findUserByUsername } from '@/lib/db';
+import { createUserPlaylist, addTrackToUserPlaylist, createSupabasePlaylist, addTrackToSupabasePlaylist } from '@/lib/db';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    let user = await getCurrentUserFromCookies();
+    const user = await getCurrentUserFromCookies();
     if (!user) {
-      const defaultUser = findUserByUsername('sai');
-      if (defaultUser) {
-        const { passwordHash, ...safe } = defaultUser;
-        user = safe;
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ playlists: [] });
     }
 
     return NextResponse.json({ playlists: user.playlists });
@@ -27,17 +20,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    let user = await getCurrentUserFromCookies();
+    const user = await getCurrentUserFromCookies();
     if (!user) {
-      const defaultUser = findUserByUsername('sai');
-      if (defaultUser) {
-        const { passwordHash, ...safe } = defaultUser;
-        user = safe;
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Please log in to create playlists' }, { status: 401 });
     }
 
     const { name, description } = await req.json();
@@ -56,17 +41,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    let user = await getCurrentUserFromCookies();
+    const user = await getCurrentUserFromCookies();
     if (!user) {
-      const defaultUser = findUserByUsername('sai');
-      if (defaultUser) {
-        const { passwordHash, ...safe } = defaultUser;
-        user = safe;
-      }
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Please log in to edit playlists' }, { status: 401 });
     }
 
     const { playlistId, track } = await req.json();
