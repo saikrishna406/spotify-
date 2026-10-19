@@ -3,6 +3,16 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
+// Prevent unexpected process.exit from shutting down server
+const realExit = process.exit;
+process.exit = function(code) {
+  if (code === 0) {
+    return realExit(0);
+  }
+  console.warn('⚠️ Prevented exit with code:', code);
+  console.trace();
+};
+
 process.on('uncaughtException', (err) => {
   console.error('Server Uncaught Exception:', err);
 });
@@ -22,6 +32,14 @@ app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
+
+      // Fast-path health check for monitors and IDE checkers
+      if (parsedUrl.pathname === '/health' || parsedUrl.pathname === '/api/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', uptime: Math.floor(process.uptime()) }));
+        return;
+      }
+
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error handling request:', req.url, err);
