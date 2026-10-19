@@ -14,7 +14,7 @@ export default function PlaylistCard({ playlist, onPlay, onClick }: PlaylistCard
   return (
     <div
       onClick={() => onClick(playlist)}
-      className="group relative bg-[#181818] hover:bg-[#282828] p-4 rounded-lg flex flex-col gap-3 cursor-pointer transition-colors duration-200 shadow-md"
+      className="group relative bg-[#181818] hover:bg-[#282828] active:bg-[#282828] p-3 sm:p-4 rounded-md sm:rounded-lg flex flex-col gap-2 sm:gap-3 cursor-pointer transition-colors duration-200 shadow-md"
     >
       {/* Artwork with floating play button */}
       <div className="relative w-full aspect-square rounded-md overflow-hidden shadow-lg bg-black/40">

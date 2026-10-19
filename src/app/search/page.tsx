@@ -7,8 +7,10 @@ import TopNav from '@/components/TopNav';
 import PlayerBar from '@/components/PlayerBar';
 import QueueDrawer from '@/components/QueueDrawer';
 import LyricsView from '@/components/LyricsView';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import MobileLibraryDrawer from '@/components/MobileLibraryDrawer';
 import TrackRow from '@/components/TrackRow';
-import { Track } from '@/types';
+import { Track, Playlist } from '@/types';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
 
@@ -39,6 +41,7 @@ export default function SearchPage() {
 
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
+  const [isMobileLibraryOpen, setIsMobileLibraryOpen] = useState(false);
 
   // Search API fetcher
   useEffect(() => {
@@ -80,7 +83,7 @@ export default function SearchPage() {
         />
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 bg-spotify-elevated rounded-lg m-2 ml-0 overflow-hidden relative">
+        <main className="flex-1 flex flex-col min-w-0 bg-spotify-elevated rounded-none md:rounded-lg m-0 md:m-2 md:ml-0 overflow-hidden relative">
           <TopNav
             searchValue={searchValue}
             onSearchInput={(val) => {
@@ -91,7 +94,7 @@ export default function SearchPage() {
             }}
           />
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 pb-36 md:pb-24 custom-scrollbar">
             {/* If searching or has results */}
             {searchValue ? (
               <div className="flex flex-col gap-4">
@@ -165,6 +168,23 @@ export default function SearchPage() {
         isQueueOpen={isQueueOpen}
         onToggleLyrics={() => setIsLyricsOpen(!isLyricsOpen)}
         isLyricsOpen={isLyricsOpen}
+      />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        onOpenLibrary={() => setIsMobileLibraryOpen(true)}
+      />
+
+      {/* Mobile Library Drawer */}
+      <MobileLibraryDrawer
+        isOpen={isMobileLibraryOpen}
+        onClose={() => setIsMobileLibraryOpen(false)}
+        onCreatePlaylist={() => {
+          const name = prompt('Enter playlist name:');
+          if (name) router.push('/');
+        }}
+        onOpenLikedSongs={() => router.push('/')}
+        onSelectPlaylist={() => router.push('/')}
       />
     </div>
   );

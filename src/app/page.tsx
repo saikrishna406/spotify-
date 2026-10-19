@@ -8,6 +8,8 @@ import TrackRow from '@/components/TrackRow';
 import PlayerBar from '@/components/PlayerBar';
 import QueueDrawer from '@/components/QueueDrawer';
 import LyricsView from '@/components/LyricsView';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import MobileLibraryDrawer from '@/components/MobileLibraryDrawer';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
 import { Playlist, Track } from '@/types';
@@ -34,6 +36,7 @@ export default function HomePage() {
   // Drawers & Lyrics
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
+  const [isMobileLibraryOpen, setIsMobileLibraryOpen] = useState(false);
 
   // Featured Sections State
   const [sections, setSections] = useState<{ title: string; playlists: Playlist[] }[]>([]);
@@ -126,14 +129,14 @@ export default function HomePage() {
       />
 
       {/* 2. CENTER MAIN CONTENT */}
-      <div className="flex-1 flex flex-col h-[calc(100vh-90px)] my-2 mr-2 bg-spotify-base rounded-lg overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full md:h-[calc(100vh-90px)] my-0 md:my-2 mr-0 md:mr-2 bg-spotify-base rounded-none md:rounded-lg overflow-hidden relative">
         <TopNav
           searchValue={searchValue}
           onSearchInput={setSearchValue}
         />
 
         {/* Viewport Scroll Area */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 pb-36 md:pb-6">
           {/* SEARCH RESULTS VIEW */}
           {searchValue.trim() ? (
             <div className="flex flex-col gap-6">
@@ -170,13 +173,13 @@ export default function HomePage() {
             /* LIKED SONGS VIEW */
             <div className="flex flex-col gap-6">
               {/* Hero Banner */}
-              <div className="flex items-end gap-6 p-6 rounded-xl bg-gradient-to-b from-[#450af5] to-spotify-base/40">
-                <div className="w-48 h-48 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center shrink-0 shadow-2xl">
-                  <Heart className="w-20 h-20 text-white fill-white" />
+              <div className="flex flex-col sm:flex-row items-center sm:items-end text-center sm:text-left gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl bg-gradient-to-b from-[#450af5] to-spotify-base/40">
+                <div className="w-32 h-32 sm:w-48 sm:h-48 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center shrink-0 shadow-2xl">
+                  <Heart className="w-14 h-14 sm:w-20 sm:h-20 text-white fill-white" />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1 sm:gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-white">Playlist</span>
-                  <h1 className="text-5xl font-extrabold text-white">Liked Songs</h1>
+                  <h1 className="text-3xl sm:text-5xl font-extrabold text-white">Liked Songs</h1>
                   <p className="text-xs text-white/80 font-medium">
                     {user?.displayName} • {user?.likedSongIds.length || 0} songs
                   </p>
@@ -221,7 +224,7 @@ export default function HomePage() {
             <div className="flex flex-col gap-6">
               {/* Hero Banner */}
               <div
-                className="flex items-end gap-6 p-6 rounded-xl"
+                className="flex flex-col sm:flex-row items-center sm:items-end text-center sm:text-left gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl"
                 style={{
                   background: `linear-gradient(180deg, ${selectedPlaylist.color || '#333'} 0%, rgba(18,18,18,0.8) 100%)`
                 }}
@@ -229,17 +232,17 @@ export default function HomePage() {
                 <img
                   src={selectedPlaylist.image}
                   alt={selectedPlaylist.name}
-                  className="w-48 h-48 rounded object-cover shadow-2xl shrink-0"
+                  className="w-32 h-32 sm:w-48 sm:h-48 rounded object-cover shadow-2xl shrink-0"
                 />
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1 sm:gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-white">Album / Playlist</span>
-                  <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
                     {selectedPlaylist.name}
                   </h1>
                   <p className="text-xs text-white/80 max-w-xl">
                     {selectedPlaylist.description}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-white/70 font-semibold mt-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-white/70 font-semibold mt-1">
                     <span>{selectedPlaylist.owner}</span> • 
                     <span>{selectedPlaylist.followerCount || 'Curated'}</span> • 
                     <span>{playlistTracks.length} songs</span>
@@ -270,7 +273,7 @@ export default function HomePage() {
 
               {/* Tracks Table */}
               <div className="flex flex-col gap-1">
-                <div className="grid grid-cols-[36px_minmax(200px,3fr)_minmax(120px,2fr)_minmax(80px,1fr)_80px] px-4 py-2 border-b border-white/10 text-xs font-bold uppercase tracking-wider text-spotify-subdued mb-2">
+                <div className="hidden md:grid grid-cols-[36px_minmax(200px,3fr)_minmax(120px,2fr)_minmax(80px,1fr)_80px] px-4 py-2 border-b border-white/10 text-xs font-bold uppercase tracking-wider text-spotify-subdued mb-2">
                   <span>#</span>
                   <span>Title</span>
                   <span>Album</span>
@@ -386,6 +389,25 @@ export default function HomePage() {
         isQueueOpen={isQueueOpen}
         onToggleLyrics={() => setIsLyricsOpen(!isLyricsOpen)}
         isLyricsOpen={isLyricsOpen}
+      />
+
+      {/* 5. MOBILE BOTTOM NAVIGATION (Fixed at bottom on phones) */}
+      <MobileBottomNav
+        onOpenLibrary={() => setIsMobileLibraryOpen(true)}
+        onHomeClick={() => {
+          setSelectedPlaylist(null);
+          setIsViewingLikedSongs(false);
+          setSearchValue('');
+        }}
+      />
+
+      {/* 6. MOBILE LIBRARY DRAWER */}
+      <MobileLibraryDrawer
+        isOpen={isMobileLibraryOpen}
+        onClose={() => setIsMobileLibraryOpen(false)}
+        onCreatePlaylist={handleCreatePlaylistPrompt}
+        onOpenLikedSongs={handleOpenLiked}
+        onSelectPlaylist={handleSelectPlaylist}
       />
     </div>
   );
