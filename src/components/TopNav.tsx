@@ -2,17 +2,19 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Home, Search, Bell, Download, ExternalLink, LogOut, User as UserIcon } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Home, Search, Bell, Download, ExternalLink, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface TopNavProps {
   onSearchInput?: (val: string) => void;
   searchValue?: string;
+  onHomeClick?: () => void;
 }
 
-export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps) {
+export default function TopNav({ onSearchInput, searchValue = '', onHomeClick }: TopNavProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout, openAuthModal } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,19 +29,35 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleHomeClick = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (onHomeClick) {
+      onHomeClick();
+    }
+    if (pathname !== '/') {
+      router.push('/');
+    }
+  };
+
   return (
     <header className="h-14 sm:h-16 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-20 bg-spotify-base/90 backdrop-blur-md">
       {/* Mobile Spotify Logo */}
-      <Link href="/" className="flex sm:hidden items-center gap-1 shrink-0 text-white" title="Spotify Home">
+      <button
+        type="button"
+        onClick={handleHomeClick}
+        className="flex sm:hidden items-center gap-1 shrink-0 text-white cursor-pointer"
+        title="Spotify Home"
+      >
         <svg className="w-7 h-7 text-spotify-green" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.498 17.304c-.218.357-.682.47-1.039.252-2.85-1.741-6.438-2.135-10.665-1.168-.409.093-.815-.164-.908-.573-.093-.409.164-.815.573-.908 4.63-1.058 8.601-.607 11.787 1.348.357.218.47.682.252 1.051zm1.468-3.265c-.275.448-.863.593-1.311.318-3.262-2.005-8.235-2.587-12.094-1.415-.506.153-1.043-.134-1.196-.64-.153-.506.134-1.043.64-1.196 4.414-1.339 9.896-.689 13.643 1.622.448.275.593.863.318 1.311zm.126-3.41c-3.911-2.322-10.354-2.535-14.088-1.401-.6.182-1.237-.158-1.419-.758-.182-.6.158-1.237.758-1.419 4.296-1.304 11.418-1.052 15.932 1.628.539.319.716 1.018.397 1.557-.319.539-1.018.716-1.557.397z"/>
         </svg>
-      </Link>
+      </button>
 
       {/* Desktop History Controls + Home Icon Button */}
       <div className="hidden sm:flex items-center gap-3 shrink-0">
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => router.back()}
             className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-spotify-subdued hover:text-white transition"
             title="Go back"
@@ -47,6 +65,7 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
+            type="button"
             onClick={() => router.forward()}
             className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-spotify-subdued hover:text-white transition"
             title="Go forward"
@@ -55,14 +74,15 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
           </button>
         </div>
 
-        {/* Home Circle Button */}
-        <Link
-          href="/"
-          className="w-10 h-10 rounded-full bg-[#1f1f1f] hover:bg-[#2a2a2a] flex items-center justify-center text-white transition hover:scale-105 shadow"
+        {/* Home Circle Button (Fixed to reset album/playlist/liked/search state) */}
+        <button
+          type="button"
+          onClick={handleHomeClick}
+          className="w-10 h-10 rounded-full bg-[#1f1f1f] hover:bg-[#2a2a2a] flex items-center justify-center text-white transition hover:scale-105 shadow cursor-pointer active:scale-95"
           title="Home"
         >
           <Home className="w-5 h-5" />
-        </Link>
+        </button>
       </div>
 
       {/* Center Search Input */}
@@ -163,7 +183,7 @@ export default function TopNav({ onSearchInput, searchValue = '' }: TopNavProps)
             </div>
           </>
         ) : (
-          /* GUEST VISITOR BUTTONS (Official Spotify Web Player Header) */
+          /* GUEST VISITOR BUTTONS */
           <div className="flex items-center gap-3">
             <button
               onClick={() => openAuthModal('register')}

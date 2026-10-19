@@ -119,6 +119,16 @@ export default function HomePage() {
     }
   };
 
+  const handleHomeClick = () => {
+    setSelectedPlaylist(null);
+    setIsViewingLikedSongs(false);
+    setSearchValue('');
+    setActiveTab('all');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleOpenLiked = () => {
     if (!user) {
       openAuthModal('login');
@@ -134,6 +144,7 @@ export default function HomePage() {
       <Sidebar
         onCreatePlaylist={handleCreatePlaylistPrompt}
         onOpenLikedSongs={handleOpenLiked}
+        onHomeClick={handleHomeClick}
       />
 
       {/* 2. CENTER MAIN CONTENT */}
@@ -141,6 +152,7 @@ export default function HomePage() {
         <TopNav
           searchValue={searchValue}
           onSearchInput={setSearchValue}
+          onHomeClick={handleHomeClick}
         />
 
         {/* Viewport Scroll Area */}

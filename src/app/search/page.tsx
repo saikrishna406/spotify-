@@ -83,12 +83,14 @@ export default function SearchPage() {
             if (name) router.push('/');
           }}
           onOpenLikedSongs={() => router.push('/')}
+          onHomeClick={() => router.push('/')}
         />
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0 bg-spotify-elevated rounded-none md:rounded-lg m-0 md:m-2 md:ml-0 overflow-hidden relative">
           <TopNav
             searchValue={searchValue}
+            onHomeClick={() => router.push('/')}
             onSearchInput={(val) => {
               setSearchValue(val);
               if (selectedCategory && val !== selectedCategory) {
@@ -176,6 +178,7 @@ export default function SearchPage() {
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         onOpenLibrary={() => setIsMobileLibraryOpen(true)}
+        onHomeClick={() => router.push('/')}
       />
 
       {/* Mobile Library Drawer */}

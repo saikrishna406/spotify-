@@ -1,50 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Search, Library, Plus, Heart, Music, Sparkles } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, Search, Library, Plus, Heart, Music } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   onCreatePlaylist: () => void;
   onOpenLikedSongs: () => void;
+  onHomeClick?: () => void;
 }
 
-export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarProps) {
+export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs, onHomeClick }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, openAuthModal } = useAuth();
+
+  const handleHomeClick = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (onHomeClick) {
+      onHomeClick();
+    }
+    if (pathname !== '/') {
+      router.push('/');
+    }
+  };
 
   return (
     <aside className="hidden md:flex w-[280px] lg:w-[300px] h-full flex-col gap-2 p-2 select-none shrink-0 text-white font-sans">
       {/* Top Navigation Block */}
       <div className="bg-spotify-base rounded-lg p-4 flex flex-col gap-3">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 px-2 py-1 text-white hover:text-white transition">
-          <svg className="w-8 h-8 text-spotify-green" viewBox="0 0 24 24" fill="currentColor">
+        <button
+          type="button"
+          onClick={handleHomeClick}
+          className="flex items-center gap-2 px-2 py-1 text-white hover:text-white transition cursor-pointer text-left"
+        >
+          <svg className="w-8 h-8 text-spotify-green shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.498 17.304c-.218.357-.682.47-1.039.252-2.85-1.741-6.438-2.135-10.665-1.168-.409.093-.815-.164-.908-.573-.093-.409.164-.815.573-.908 4.63-1.058 8.601-.607 11.787 1.348.357.218.47.682.252 1.051zm1.468-3.265c-.275.448-.863.593-1.311.318-3.262-2.005-8.235-2.587-12.094-1.415-.506.153-1.043-.134-1.196-.64-.153-.506.134-1.043.64-1.196 4.414-1.339 9.896-.689 13.643 1.622.448.275.593.863.318 1.311zm.126-3.41c-3.911-2.322-10.354-2.535-14.088-1.401-.6.182-1.237-.158-1.419-.758-.182-.6.158-1.237.758-1.419 4.296-1.304 11.418-1.052 15.932 1.628.539.319.716 1.018.397 1.557-.319.539-1.018.716-1.557.397z"/>
           </svg>
           <span className="font-bold text-lg tracking-tight">Spotify</span>
-        </Link>
+        </button>
 
         {/* Primary Links */}
         <nav className="flex flex-col gap-1">
-          <Link
-            href="/"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition ${
-              pathname === '/' ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white'
-            }`}
+          <button
+            type="button"
+            onClick={handleHomeClick}
+            className={'w-full flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition cursor-pointer text-left ' + (pathname === '/' ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white')}
           >
-            <Home className="w-6 h-6" />
+            <Home className="w-6 h-6 shrink-0" />
             <span>Home</span>
-          </Link>
+          </button>
           <Link
             href="/search"
-            className={`flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition ${
-              pathname === '/search' ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white'
-            }`}
+            className={'flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition ' + (pathname === '/search' ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white')}
           >
-            <Search className="w-6 h-6" />
+            <Search className="w-6 h-6 shrink-0" />
             <span>Search</span>
           </Link>
         </nav>
@@ -119,9 +132,8 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarP
             ))}
           </div>
         ) : (
-          /* GUEST USER LIBRARY PROMPT (Official Spotify Guest Experience) */
+          /* GUEST USER LIBRARY PROMPT */
           <div className="flex-1 overflow-y-auto flex flex-col gap-4 py-2 custom-scrollbar">
-            {/* Card 1: Create your first playlist */}
             <div className="p-4 rounded-lg bg-[#242424] flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <span className="font-bold text-sm text-white">Create your first playlist</span>
@@ -135,7 +147,6 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarP
               </button>
             </div>
 
-            {/* Card 2: Discover Podcasts */}
             <div className="p-4 rounded-lg bg-[#242424] flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <span className="font-bold text-sm text-white">Let&apos;s find some songs to save</span>

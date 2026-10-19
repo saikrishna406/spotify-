@@ -3,6 +3,8 @@ import { registerNewUser, getSupabaseUser } from '@/lib/db';
 import { signUserToken } from '@/lib/auth';
 import { isSupabaseConfigured, createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { username, password, displayName } = await req.json();
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
       if (supabase) {
         const email = trimmedInput.includes('@')
           ? trimmedInput.toLowerCase()
-          : `${trimmedInput.toLowerCase()}@musicapp.com`;
+          : trimmedInput.toLowerCase() + '@musicapp.com';
 
         const cleanUsername = trimmedInput.includes('@')
           ? trimmedInput.split('@')[0]
@@ -44,43 +46,49 @@ export async function POST(req: NextRequest) {
         }
 
         if (data.user) {
-          // Wait briefly for trigger execution if needed
+          // Explicitly ensure profile row exists in Supabase
+          try {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              username: cleanUsername,
+              display_name: displayName || cleanUsername,
+              avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80'
+            }, { onConflict: 'id' });
+          } catch (e) {
+            console.warn('Profile direct upsert note:', e);
+          }
+
+          // Fetch the populated profile
           let userProfile = await getSupabaseUser(data.user.id);
           if (!userProfile) {
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, 300));
             userProfile = await getSupabaseUser(data.user.id);
           }
 
-          if (userProfile) {
-            const token = signUserToken({ id: userProfile.id, username: userProfile.username });
-            const res = NextResponse.json({
-              success: true,
-              user: userProfile,
-              sessionActive: !!data.session
-            });
-            res.cookies.set('auth_token', token, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
-              maxAge: 30 * 24 * 60 * 60,
-              path: '/'
-            });
-            return res;
-          }
+          const resolvedUser = userProfile || {
+            id: data.user.id,
+            username: cleanUsername,
+            displayName: displayName || cleanUsername,
+            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
+            likedSongIds: [],
+            likedSongsData: [],
+            playlists: []
+          };
 
-          return NextResponse.json({
+          const token = signUserToken({ id: resolvedUser.id, username: resolvedUser.username });
+          const res = NextResponse.json({
             success: true,
-            user: {
-              id: data.user.id,
-              username: cleanUsername,
-              displayName: displayName || cleanUsername,
-              avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
-              likedSongIds: [],
-              likedSongsData: [],
-              playlists: []
-            },
+            user: resolvedUser,
             sessionActive: !!data.session
           });
+          res.cookies.set('auth_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/'
+          });
+          return res;
         }
       }
     }

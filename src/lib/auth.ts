@@ -30,6 +30,16 @@ export async function getCurrentUserFromCookies(): Promise<User | null> {
         if (authUser && !error) {
           const userDetails = await getSupabaseUser(authUser.id);
           if (userDetails) return userDetails;
+
+          return {
+            id: authUser.id,
+            username: (authUser.user_metadata?.username as string) || authUser.email?.split('@')[0] || 'user',
+            displayName: (authUser.user_metadata?.display_name as string) || authUser.email?.split('@')[0] || 'User',
+            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
+            likedSongIds: [],
+            likedSongsData: [],
+            playlists: []
+          };
         }
       }
     } catch (e) {
@@ -44,6 +54,14 @@ export async function getCurrentUserFromCookies(): Promise<User | null> {
 
   const decoded = verifyUserToken(token);
   if (!decoded) return null;
+
+  // If Supabase has this user id, fetch profile from Supabase
+  if (isSupabaseConfigured()) {
+    try {
+      const supaUser = await getSupabaseUser(decoded.id);
+      if (supaUser) return supaUser;
+    } catch (e) {}
+  }
 
   const record = findUserById(decoded.id);
   if (!record) return null;

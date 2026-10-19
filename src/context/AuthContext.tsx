@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Track, UserPlaylist } from '@/types';
 import AuthModal from '@/components/AuthModal';
+import SpotifySplashScreen from '@/components/SpotifySplashScreen';
+import CompulsoryAuthGate from '@/components/CompulsoryAuthGate';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register');
 
   const fetchSession = async () => {
     try {
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchSession();
   }, []);
 
-  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+  const openAuthModal = (mode: 'login' | 'register' = 'register') => {
     setAuthModalMode(mode);
     setIsAuthModalOpen(true);
   };
@@ -187,12 +189,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       openAuthModal,
       closeAuthModal
     }}>
-      {children}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={closeAuthModal}
-        initialTab={authModalMode}
-      />
+      {isLoading ? (
+        <SpotifySplashScreen />
+      ) : !user ? (
+        <CompulsoryAuthGate />
+      ) : (
+        <>
+          {children}
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={closeAuthModal}
+            initialTab={authModalMode}
+          />
+        </>
+      )}
     </AuthContext.Provider>
   );
 }
