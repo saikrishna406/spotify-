@@ -74,9 +74,9 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start sm:justify-center p-4 sm:p-8 font-sans selection:bg-[#1ed760] selection:text-black">
+    <div className="min-h-screen w-full bg-[#000000] text-white flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 py-6 sm:py-10 overflow-y-auto font-sans selection:bg-[#1ed760] selection:text-black">
       {/* Centered Signup Container (Spotify Specs: max-w-[450px]) */}
-      <div className="w-full max-w-[450px] bg-[#121212] sm:border sm:border-[#282828] rounded-xl p-6 sm:p-10 shadow-2xl flex flex-col">
+      <div className="w-full max-w-[420px] bg-[#121212] sm:border sm:border-[#282828] rounded-xl p-6 sm:p-8 shadow-2xl flex flex-col my-auto">
         {/* Spotify Logo */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center gap-2 group">

@@ -32,7 +32,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={jakarta.variable}>
-      <body className="bg-black text-white font-sans antialiased overflow-hidden">
+      <body className="bg-black text-white font-sans antialiased">
         <AuthProvider>
           <AudioProvider>
             {children}

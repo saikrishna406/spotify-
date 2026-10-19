@@ -61,7 +61,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 select-none">
-      <div className="w-full max-w-[440px] bg-[#121212] border border-[#282828] rounded-xl shadow-2xl p-6 sm:p-8 text-white relative flex flex-col">
+      <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto custom-scrollbar bg-[#121212] border border-[#282828] rounded-xl shadow-2xl p-6 sm:p-8 text-white relative flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
