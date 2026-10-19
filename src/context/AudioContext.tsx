@@ -51,7 +51,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
-      if (audio.duration && !isNaN(audio.duration)) {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
       }
     };
@@ -103,6 +103,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
 
     setCurrentTrack(track);
+    if (track.duration && track.duration > 0) {
+      setDuration(track.duration);
+    }
+    setCurrentTime(0);
     if (newContext) {
       setContextQueue(newContext);
     }

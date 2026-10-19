@@ -134,7 +134,7 @@ export default function PlayerBar({
               alt={state.currentTrack.name}
               className="w-10 h-10 rounded object-cover shadow shrink-0 bg-black/40"
             />
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 flex-1 max-w-[220px]">
               <span className="font-semibold text-xs text-white truncate">
                 {state.currentTrack.name}
               </span>
@@ -233,7 +233,7 @@ export default function PlayerBar({
             </button>
 
             {/* Live Visualizer */}
-            <canvas ref={canvasRef} width={60} height={20} className="hidden sm:block opacity-90 ml-1" />
+            <canvas ref={canvasRef} width={50} height={18} className="hidden xl:block opacity-90 ml-1 shrink-0" />
           </>
         ) : (
           <div className="text-xs text-spotify-subdued">Select a track to play</div>

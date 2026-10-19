@@ -121,7 +121,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-black overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-black overflow-hidden font-sans">
       {/* 1. LEFT SIDEBAR */}
       <Sidebar
         onCreatePlaylist={handleCreatePlaylistPrompt}

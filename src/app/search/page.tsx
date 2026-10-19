@@ -74,7 +74,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-black text-white font-sans select-none">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-black text-white font-sans select-none">
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <Sidebar
