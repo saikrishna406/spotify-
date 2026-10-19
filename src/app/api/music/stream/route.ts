@@ -46,6 +46,11 @@ export async function GET(req: NextRequest) {
       headers: fetchHeaders
     });
 
+    if (!cdnRes.ok && cdnRes.status !== 206) {
+      console.warn('CDN returned non-200 status:', cdnRes.status);
+      return NextResponse.json({ error: 'CDN access denied', status: cdnRes.status }, { status: cdnRes.status });
+    }
+
     const responseHeaders = new Headers();
     responseHeaders.set('Content-Type', cdnRes.headers.get('content-type') || 'audio/mp4');
     responseHeaders.set('Accept-Ranges', 'bytes');

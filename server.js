@@ -1,4 +1,5 @@
 process.chdir(__dirname);
+const fs = require('fs');
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -21,7 +22,8 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Server Unhandled Rejection:', reason);
 });
 
-const dev = process.env.NODE_ENV !== 'production';
+const hasBuild = fs.existsSync(require('path').join(__dirname, '.next', 'BUILD_ID'));
+const dev = process.env.NODE_ENV === 'development' || !hasBuild;
 const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 
