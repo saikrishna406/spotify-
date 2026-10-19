@@ -21,12 +21,66 @@ export default function TrackRow({ track, index, onPlay }: TrackRowProps) {
   const liked = isLiked(track.id);
 
   return (
-    <div
-      onClick={() => onPlay(track)}
-      className={`group grid grid-cols-[36px_minmax(200px,3fr)_minmax(120px,2fr)_minmax(80px,1fr)_80px] items-center px-4 py-2.5 rounded-md hover:bg-white/10 cursor-pointer transition select-none text-sm ${
-        isCurrent ? 'bg-white/10' : ''
-      }`}
-    >
+    <>
+      {/* MOBILE ROW (Compact touch-friendly row) */}
+      <div
+        onClick={() => onPlay(track)}
+        className={`flex md:hidden items-center justify-between gap-3 px-2 py-2 rounded-lg active:bg-white/15 cursor-pointer select-none transition ${
+          isCurrent ? 'bg-white/10' : ''
+        }`}
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="relative w-11 h-11 shrink-0 rounded overflow-hidden shadow bg-black/40">
+            <img
+              src={track.image}
+              alt={track.name}
+              className="w-full h-full object-cover"
+            />
+            {isPlaying && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="flex items-end gap-0.5 h-3">
+                  <span className="w-0.5 bg-spotify-green animate-pulse h-full"></span>
+                  <span className="w-0.5 bg-spotify-green animate-pulse h-2"></span>
+                  <span className="w-0.5 bg-spotify-green animate-pulse h-3"></span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className={`font-semibold text-sm truncate ${isCurrent ? 'text-spotify-green' : 'text-white'}`}>
+              {track.name}
+            </span>
+            <span className="text-xs text-spotify-subdued truncate">
+              {track.artists}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike(track);
+            }}
+            className={`p-2 transition ${liked ? 'text-spotify-green' : 'text-spotify-subdued active:text-white'}`}
+          >
+            <Heart className={`w-4 h-4 ${liked ? 'fill-spotify-green' : ''}`} />
+          </button>
+          <span className="text-[11px] font-mono text-spotify-subdued tabular-nums">
+            {track.durationFormatted}
+          </span>
+        </div>
+      </div>
+
+      {/* DESKTOP ROW (Full 5-column table) */}
+      <div
+        onClick={() => onPlay(track)}
+        className={`hidden md:grid md:grid-cols-[36px_minmax(200px,3fr)_minmax(120px,2fr)_minmax(80px,1fr)_80px] items-center px-4 py-2.5 rounded-md hover:bg-white/10 cursor-pointer transition select-none text-sm ${
+          isCurrent ? 'bg-white/10' : ''
+        }`}
+      >
       {/* Col 1: Index / Play Icon / Equalizer Wave */}
       <div className="flex items-center text-spotify-subdued text-sm font-medium">
         {isPlaying ? (
@@ -113,5 +167,6 @@ export default function TrackRow({ track, index, onPlay }: TrackRowProps) {
         </span>
       </div>
     </div>
+    </>
   );
 }

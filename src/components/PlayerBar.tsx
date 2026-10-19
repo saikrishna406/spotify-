@@ -120,7 +120,92 @@ export default function PlayerBar({
   };
 
   return (
-    <footer className="h-[90px] w-full bg-black border-t border-white/10 px-4 grid grid-cols-[30%_40%_30%] items-center select-none fixed bottom-0 left-0 z-50">
+    <>
+      {/* MOBILE MINI-PLAYER (FLOATING ABOVE BOTTOM NAV) */}
+      {state.currentTrack && (
+        <div className="flex md:hidden fixed bottom-[68px] left-2 right-2 z-40 bg-[#282828]/95 backdrop-blur-md rounded-lg p-2.5 shadow-2xl border border-white/10 select-none items-center justify-between overflow-hidden">
+          {/* Track Info (Tap to toggle lyrics) */}
+          <div
+            onClick={onToggleLyrics}
+            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer pr-2"
+          >
+            <img
+              src={state.currentTrack.image}
+              alt={state.currentTrack.name}
+              className="w-10 h-10 rounded object-cover shadow shrink-0 bg-black/40"
+            />
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold text-xs text-white truncate">
+                {state.currentTrack.name}
+              </span>
+              <span className="text-[11px] text-spotify-subdued truncate">
+                {state.currentTrack.artists}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Lyrics toggle */}
+            {onToggleLyrics && (
+              <button
+                onClick={onToggleLyrics}
+                className={`p-2 rounded-full transition ${
+                  isLyricsOpen ? 'text-spotify-green' : 'text-spotify-subdued active:text-white'
+                }`}
+                title="Lyrics"
+              >
+                <Mic2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Like */}
+            <button
+              onClick={() => state.currentTrack && toggleLike(state.currentTrack)}
+              className={`p-2 transition ${liked ? 'text-spotify-green' : 'text-spotify-subdued active:text-white'}`}
+              title={liked ? 'Liked' : 'Like'}
+            >
+              <Heart className={`w-4 h-4 ${liked ? 'fill-spotify-green' : ''}`} />
+            </button>
+
+            {/* Play/Pause */}
+            <button
+              onClick={togglePlay}
+              className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center active:scale-95 transition shadow ml-1"
+              title={state.isPlaying ? 'Pause' : 'Play'}
+            >
+              {state.isPlaying ? (
+                <Pause className="w-4 h-4 fill-black" />
+              ) : (
+                <Play className="w-4 h-4 fill-black ml-0.5" />
+              )}
+            </button>
+
+            {/* Next */}
+            <button
+              onClick={next}
+              className="p-1.5 text-spotify-subdued active:text-white transition"
+              title="Next"
+            >
+              <SkipForward className="w-4 h-4 fill-current" />
+            </button>
+          </div>
+
+          {/* Mini Progress Bar Line at Bottom */}
+          <div
+            onClick={handleSeekClick}
+            className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-white/20 cursor-pointer"
+          >
+            <div
+              className="h-full bg-spotify-green transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DESKTOP FULL PLAYER BAR */}
+      <footer className="hidden md:grid h-[90px] w-full bg-black border-t border-white/10 px-4 grid-cols-[30%_40%_30%] items-center select-none fixed bottom-0 left-0 z-50">
       {/* LEFT: Currently Playing Track Info */}
       <div className="flex items-center gap-3.5 min-w-0 pr-4">
         {state.currentTrack ? (
@@ -297,5 +382,6 @@ export default function PlayerBar({
         </button>
       </div>
     </footer>
+    </>
   );
 }

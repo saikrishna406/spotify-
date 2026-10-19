@@ -75,9 +75,9 @@ export default function LyricsView({ isOpen, onClose }: LyricsViewProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-30 bg-gradient-to-b from-[#3b1d54] via-[#1a0b28] to-[#0a0510] text-white flex flex-col overflow-hidden animate-fadeIn select-none">
+    <div className="fixed inset-0 z-50 md:absolute md:inset-0 md:z-30 bg-gradient-to-b from-[#3b1d54] via-[#1a0b28] to-[#0a0510] text-white flex flex-col overflow-hidden animate-fadeIn select-none">
       {/* Top Header Bar */}
-      <div className="h-16 px-6 sm:px-10 flex items-center justify-between border-b border-white/10 shrink-0 bg-black/20 backdrop-blur-md">
+      <div className="h-14 sm:h-16 px-4 sm:px-10 flex items-center justify-between border-b border-white/10 shrink-0 bg-black/20 backdrop-blur-md">
         <div className="flex items-center gap-3 min-w-0">
           {currentTrack?.image && (
             <img

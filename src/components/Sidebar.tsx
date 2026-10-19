@@ -19,7 +19,7 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs }: SidebarP
   const [showImportBanner, setShowImportBanner] = useState(true);
 
   return (
-    <aside className="w-[300px] h-full flex flex-col gap-2 p-2 select-none shrink-0 text-white font-sans">
+    <aside className="hidden md:flex w-[280px] lg:w-[300px] h-full flex-col gap-2 p-2 select-none shrink-0 text-white font-sans">
       {/* Top Navigation Block */}
       <div className="bg-spotify-base rounded-lg p-4 flex flex-col gap-3">
         {/* Brand Logo */}

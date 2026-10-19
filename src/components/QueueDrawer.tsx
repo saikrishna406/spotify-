@@ -12,7 +12,7 @@ export default function QueueDrawer({ onClose }: QueueDrawerProps) {
   const { state, playTrack, removeFromQueue } = useAudio();
 
   return (
-    <aside className="w-[320px] h-full bg-spotify-base border-l border-white/10 flex flex-col shrink-0 select-none text-white z-20">
+    <aside className="fixed inset-0 z-50 md:relative md:w-[320px] md:h-full bg-spotify-base border-l border-white/10 flex flex-col shrink-0 select-none text-white">
       {/* Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
         <h3 className="font-bold text-base text-white">Queue</h3>
