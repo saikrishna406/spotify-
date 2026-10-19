@@ -205,9 +205,9 @@ export default function PlayerBar({
       )}
 
       {/* DESKTOP FULL PLAYER BAR */}
-      <footer className="hidden md:grid h-[90px] w-full bg-black border-t border-white/10 px-4 grid-cols-[30%_40%_30%] items-center select-none fixed bottom-0 left-0 z-50">
+      <footer className="hidden md:flex h-[90px] w-full bg-black border-t border-white/10 px-4 items-center justify-between select-none fixed bottom-0 left-0 z-50">
       {/* LEFT: Currently Playing Track Info */}
-      <div className="flex items-center gap-3.5 min-w-0 pr-4">
+      <div className="flex items-center gap-3.5 min-w-[200px] w-[30%] overflow-hidden pr-2 shrink-0">
         {state.currentTrack ? (
           <>
             <img
@@ -215,7 +215,7 @@ export default function PlayerBar({
               alt={state.currentTrack.name}
               className="w-14 h-14 rounded object-cover shadow-lg shrink-0 bg-black/40"
             />
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
               <span className="font-semibold text-sm text-white truncate hover:underline cursor-pointer">
                 {state.currentTrack.name}
               </span>
@@ -226,7 +226,7 @@ export default function PlayerBar({
 
             <button
               onClick={() => state.currentTrack && toggleLike(state.currentTrack)}
-              className={`p-1.5 transition ${liked ? 'text-spotify-green' : 'text-spotify-subdued hover:text-white'}`}
+              className={`p-1.5 shrink-0 transition ${liked ? 'text-spotify-green' : 'text-spotify-subdued hover:text-white'}`}
               title={liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
             >
               <Heart className={`w-4 h-4 ${liked ? 'fill-spotify-green' : ''}`} />
@@ -241,7 +241,7 @@ export default function PlayerBar({
       </div>
 
       {/* CENTER: Controls & Progress Bar */}
-      <div className="flex flex-col items-center gap-2 max-w-[650px] w-full mx-auto">
+      <div className="flex flex-col items-center gap-2 max-w-[650px] w-[40%] mx-auto shrink-0">
         <div className="flex items-center gap-5">
           {/* Shuffle */}
           <button
@@ -319,7 +319,7 @@ export default function PlayerBar({
       </div>
 
       {/* RIGHT: Volume & Utilities */}
-      <div className="flex items-center justify-end gap-3 pl-4">
+      <div className="flex items-center justify-end gap-3 min-w-[200px] w-[30%] pl-2 shrink-0">
         {/* Lyrics Toggle (Spotify Mic Icon) */}
         {onToggleLyrics && (
           <button

@@ -72,29 +72,29 @@ export async function searchSongs(query: string, page = 1, limit = 20): Promise<
 }
 
 /** Generate verified, signed CloudFront CDN streaming audio URL */
-export async function getStreamUrl(encryptedUrl: string, bitrate: '96' | '160' | '320' = '160'): Promise<string | null> {
+export async function getStreamUrl(encryptedUrl: string, bitrate: '96' | '160' | '320' = '320'): Promise<string | null> {
   if (!encryptedUrl) return null;
-  try {
-    const url = `${BASE_URL}?__call=song.generateAuthToken&_marker=0&_format=json&bitrate=${bitrate}&url=${encodeURIComponent(encryptedUrl)}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  const bitrates: ('320' | '160' | '128' | '96')[] = [bitrate as any, '320', '160', '128', '96'].filter((v, i, a) => a.indexOf(v) === i);
+  for (const b of bitrates) {
+    try {
+      const url = `${BASE_URL}?__call=song.generateAuthToken&_marker=0&_format=json&bitrate=${b}&url=${encodeURIComponent(encryptedUrl)}`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.status === 'success' && data.auth_url) {
+        return data.auth_url;
       }
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.status === 'success' && data.auth_url) {
-      return data.auth_url;
+    } catch {
+      continue;
     }
-    return null;
-  } catch (error) {
-    console.error('Error getting stream URL from Saavn:', error);
-    return null;
   }
+  return null;
 }
 
-/** Get Song details by ID */
 export async function getSongDetails(pid: string): Promise<Track | null> {
   try {
     const url = `${BASE_URL}?__call=song.getDetails&cc=in&_marker=0&_format=json&pids=${encodeURIComponent(pid)}`;

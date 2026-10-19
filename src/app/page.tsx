@@ -13,10 +13,10 @@ import MobileLibraryDrawer from '@/components/MobileLibraryDrawer';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
 import { Playlist, Track } from '@/types';
-import { Play, Heart, ChevronRight, Clock } from 'lucide-react';
+import { Play, Pause, Heart, ChevronRight, Clock } from 'lucide-react';
 
 export default function HomePage() {
-  const { playTrack, state } = useAudio();
+  const { playTrack, togglePlay, state } = useAudio();
   const { user, createPlaylist, isLiked, toggleLike } = useAuth();
 
   // Navigation / View State
@@ -255,13 +255,22 @@ export default function HomePage() {
                 <button
                   onClick={() => {
                     if (playlistTracks.length > 0) {
-                      playTrack(playlistTracks[0], playlistTracks);
+                      const isCurrentPlaying = state.currentTrack && playlistTracks.some(t => t.id === state.currentTrack?.id);
+                      if (isCurrentPlaying) {
+                        togglePlay();
+                      } else {
+                        playTrack(playlistTracks[0], playlistTracks);
+                      }
                     }
                   }}
                   className="w-14 h-14 rounded-full bg-spotify-green hover:bg-spotify-green-hover text-black flex items-center justify-center shadow-xl hover:scale-105 transition"
-                  title="Play"
+                  title={state.isPlaying && state.currentTrack && playlistTracks.some(t => t.id === state.currentTrack?.id) ? 'Pause' : 'Play'}
                 >
-                  <Play className="w-7 h-7 fill-black ml-0.5" />
+                  {state.isPlaying && state.currentTrack && playlistTracks.some(t => t.id === state.currentTrack?.id) ? (
+                    <Pause className="w-7 h-7 fill-black" />
+                  ) : (
+                    <Play className="w-7 h-7 fill-black ml-0.5" />
+                  )}
                 </button>
                 <button
                   onClick={() => setSelectedPlaylist(null)}

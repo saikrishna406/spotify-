@@ -66,7 +66,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const onPause = () => setIsPlaying(false);
     const onEnded = () => handleTrackEnded();
     const onError = () => {
-      console.error('Audio playback error code:', audio.error?.code, audio.error?.message);
+      console.warn('Audio playback error code:', audio.error?.code, audio.error?.message);
+      setIsPlaying(false);
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -114,8 +115,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const stream = resolveStreamUrl(track);
     if (stream && audioRef.current) {
       audioRef.current.src = stream;
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.warn('Play error:', e));
+      audioRef.current.play().catch(e => {
+        console.warn('Playback error:', e);
+        setIsPlaying(false);
+      });
     }
   };
 
