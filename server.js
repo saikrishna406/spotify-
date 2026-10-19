@@ -1,24 +1,13 @@
 process.chdir(__dirname);
 const fs = require('fs');
 const { createServer } = require('http');
-const { parse } = require('url');
 const next = require('next');
-
-// Prevent unexpected process.exit from shutting down server
-const realExit = process.exit;
-process.exit = function(code) {
-  if (code === 0) {
-    return realExit(0);
-  }
-  console.warn('⚠️ Prevented exit with code:', code);
-  console.trace();
-};
 
 process.on('uncaughtException', (err) => {
   console.error('Server Uncaught Exception:', err);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('Server Unhandled Rejection:', reason);
 });
 
@@ -33,16 +22,16 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     try {
-      const parsedUrl = parse(req.url, true);
+      const host = req.headers.host || 'localhost:3000';
+      const url = new URL(req.url || '/', 'http://' + host);
 
-      // Fast-path health check for monitors and IDE checkers
-      if (parsedUrl.pathname === '/health' || parsedUrl.pathname === '/api/health') {
+      if (url.pathname === '/health' || url.pathname === '/api/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok', uptime: Math.floor(process.uptime()) }));
         return;
       }
 
-      await handle(req, res, parsedUrl);
+      await handle(req, res);
     } catch (err) {
       console.error('Error handling request:', req.url, err);
       if (!res.headersSent) {
@@ -57,7 +46,7 @@ app.prepare().then(() => {
   });
 
   server.listen(port, hostname, () => {
-    console.log(`> Ready on http://localhost:${port} and http://${hostname}:${port}`);
+    console.log('> Ready on http://localhost:' + port + ' and http://' + hostname + ':' + port);
   });
 }).catch(err => {
   console.error('Next.js prepare error:', err);
