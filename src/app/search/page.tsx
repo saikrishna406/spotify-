@@ -15,6 +15,9 @@ import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
 
 const BROWSE_CATEGORIES = [
+  { id: 'english-pop', title: 'Global Pop & English Hits', color: 'from-blue-600 to-indigo-900', query: 'English Top Hits' },
+  { id: 'hiphop', title: 'Hip-Hop & R&B', color: 'from-amber-600 to-red-800', query: 'Hip Hop Hits' },
+  { id: 'rock', title: 'Rock & Classics', color: 'from-rose-600 to-pink-900', query: 'Classic Rock Hits' },
   { id: 'telugu', title: 'Telugu Hits', color: 'from-emerald-600 to-teal-800', query: 'Telugu Top Hits' },
   { id: 'tamil', title: 'Tamil Blockbusters', color: 'from-purple-600 to-indigo-900', query: 'Tamil Top Hits' },
   { id: 'hindi', title: 'Bollywood Hits', color: 'from-rose-600 to-red-800', query: 'Bollywood Top Hits' },

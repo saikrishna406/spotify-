@@ -153,7 +153,7 @@ export default function HomePage() {
               </div>
 
               {isSearching ? (
-                <div className="p-12 text-center text-spotify-subdued">Searching Indian songs...</div>
+                <div className="p-12 text-center text-spotify-subdued">Searching songs & artists...</div>
               ) : searchResults.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {searchResults.map((track, idx) => (
@@ -166,7 +166,7 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="p-12 text-center text-spotify-subdued">No songs found. Try Telugu, Tamil, or Hindi keywords.</div>
+                <div className="p-12 text-center text-spotify-subdued">No songs found for "{searchValue}". Try searching by song name (e.g. Shape of You, Believer) or artist.</div>
               )}
             </div>
           ) : isViewingLikedSongs ? (

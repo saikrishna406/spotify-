@@ -121,6 +121,56 @@ export async function getIndianFeaturedSections(): Promise<{ title: string; play
   // Curated collections that resolve live queries on the fly
   return [
     {
+      title: 'Global & English Top Hits',
+      playlists: [
+        {
+          id: 'album-edsheeran',
+          name: 'Ed Sheeran',
+          description: 'Shape of You, Perfect, Bad Habits, Thinking Out Loud',
+          image: 'https://c.saavncdn.com/346/Shape-of-You-English-2017-500x500.jpg',
+          owner: 'Atlantic Records',
+          followerCount: '89,400,000 saves',
+          color: '#0284c7'
+        },
+        {
+          id: 'album-taylorswift',
+          name: 'Taylor Swift',
+          description: 'Cruel Summer, Anti-Hero, Blank Space, Lover',
+          image: 'https://c.saavncdn.com/141/1989-Taylor-s-Version-Deluxe-English-2023-20231027000551-500x500.jpg',
+          owner: 'Republic Records',
+          followerCount: '112,000,000 saves',
+          color: '#ec4899'
+        },
+        {
+          id: 'album-imaginedragons',
+          name: 'Imagine Dragons',
+          description: 'Believer, Radioactive, Demons, Thunder',
+          image: 'https://c.saavncdn.com/978/Evolve-English-2017-500x500.jpg',
+          owner: 'Interscope Records',
+          followerCount: '64,200,000 saves',
+          color: '#6366f1'
+        },
+        {
+          id: 'album-coldplay',
+          name: 'Coldplay',
+          description: 'Something Just Like This, Hymn for the Weekend, Yellow',
+          image: 'https://c.saavncdn.com/464/A-Head-Full-of-Dreams-English-2015-500x500.jpg',
+          owner: 'Parlophone UK',
+          followerCount: '78,900,000 saves',
+          color: '#e11d48'
+        },
+        {
+          id: 'album-alanwalker',
+          name: 'Alan Walker',
+          description: 'Faded, Alone, Darkside, On My Way',
+          image: 'https://c.saavncdn.com/466/Faded-English-2015-500x500.jpg',
+          owner: 'Sony Music',
+          followerCount: '58,300,000 saves',
+          color: '#10b981'
+        }
+      ]
+    },
+    {
       title: 'Popular albums and singles',
       playlists: [
         {
