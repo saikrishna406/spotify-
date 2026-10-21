@@ -1,9 +1,17 @@
 -- ====================================================================
--- SUPABASE DATABASE SCHEMA FOR SPOTIFY WEB CLONE
+-- SUPABASE DATABASE SCHEMA FOR SPOTIFY WEB CLONE (MULTI-USER PLAYLISTS)
 -- ====================================================================
--- Run this script in the Supabase SQL Editor: Dashboard -> SQL Editor -> New Query
+-- Run this script in the Supabase Dashboard:
+-- 1. Log in to your project at https://supabase.com/dashboard
+-- 2. Open 'SQL Editor' from the left sidebar
+-- 3. Click '+ New query', paste this entire script, and click 'Run' (or press Ctrl + Enter)
 
+-- Enable UUID extension if not already enabled
+create extension if not exists "uuid-ossp";
+
+-- --------------------------------------------------------------------
 -- 1. PROFILES TABLE (Linked to Supabase Auth users)
+-- --------------------------------------------------------------------
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   username text unique not null,
@@ -13,7 +21,6 @@ create table if not exists public.profiles (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable RLS
 alter table public.profiles enable row level security;
 
 create policy "Public profiles are viewable by everyone." on public.profiles
@@ -25,7 +32,7 @@ create policy "Users can insert their own profile." on public.profiles
 create policy "Users can update their own profile." on public.profiles
   for update using ((select auth.uid()) = id);
 
--- Function to handle new user registration from Supabase Auth
+-- Auto-create profile trigger on auth signup
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -40,40 +47,21 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Trigger to execute on signup
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 2. LIKED SONGS TABLE
-create table if not exists public.liked_songs (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  track_id text not null,
-  track_data jsonb not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique (user_id, track_id)
-);
-
-alter table public.liked_songs enable row level security;
-
-create policy "Users can view their own liked songs" on public.liked_songs
-  for select using ((select auth.uid()) = user_id);
-
-create policy "Users can add liked songs" on public.liked_songs
-  for insert with check ((select auth.uid()) = user_id);
-
-create policy "Users can remove liked songs" on public.liked_songs
-  for delete using ((select auth.uid()) = user_id);
-
--- 3. PLAYLISTS TABLE
+-- --------------------------------------------------------------------
+-- 2. PLAYLISTS TABLE (Stores custom playlists per user)
+-- --------------------------------------------------------------------
 create table if not exists public.playlists (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   name text not null,
   description text default '',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 alter table public.playlists enable row level security;
@@ -90,7 +78,12 @@ create policy "Users can update their own playlists" on public.playlists
 create policy "Users can delete their own playlists" on public.playlists
   for delete using ((select auth.uid()) = user_id);
 
--- 4. PLAYLIST TRACKS TABLE
+-- Performance index for fast per-user playlist lookup
+create index if not exists idx_playlists_user_id on public.playlists(user_id);
+
+-- --------------------------------------------------------------------
+-- 3. PLAYLIST_TRACKS TABLE (Stores songs added to each playlist)
+-- --------------------------------------------------------------------
 create table if not exists public.playlist_tracks (
   id uuid default gen_random_uuid() primary key,
   playlist_id uuid references public.playlists(id) on delete cascade not null,
@@ -129,3 +122,33 @@ create policy "Users can remove tracks from their playlists" on public.playlist_
       and public.playlists.user_id = (select auth.uid())
     )
   );
+
+-- Fast lookup indexes for playlist tracks & ordering
+create index if not exists idx_playlist_tracks_playlist_id on public.playlist_tracks(playlist_id);
+create index if not exists idx_playlist_tracks_position on public.playlist_tracks(playlist_id, position);
+
+-- --------------------------------------------------------------------
+-- 4. LIKED_SONGS TABLE (Stores user favorite songs)
+-- --------------------------------------------------------------------
+create table if not exists public.liked_songs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  track_id text not null,
+  track_data jsonb not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (user_id, track_id)
+);
+
+alter table public.liked_songs enable row level security;
+
+create policy "Users can view their own liked songs" on public.liked_songs
+  for select using ((select auth.uid()) = user_id);
+
+create policy "Users can add liked songs" on public.liked_songs
+  for insert with check ((select auth.uid()) = user_id);
+
+create policy "Users can remove liked songs" on public.liked_songs
+  for delete using ((select auth.uid()) = user_id);
+
+-- Performance index for user liked songs
+create index if not exists idx_liked_songs_user_id on public.liked_songs(user_id);
