@@ -182,6 +182,31 @@ export function createUserPlaylist(userId: string, name: string, description = '
   return newPl;
 }
 
+
+export function deleteUserPlaylist(userId: string, playlistId: string): boolean {
+  const users = ensureDbFile();
+  const user = users.find(u => u.id === userId);
+  if (!user) return false;
+
+  user.playlists = user.playlists.filter(p => p.id !== playlistId);
+  saveUsers(users);
+  return true;
+}
+
+export function removeTrackFromUserPlaylist(userId: string, playlistId: string, trackId: string): UserPlaylist {
+  const users = ensureDbFile();
+  const user = users.find(u => u.id === userId);
+  if (!user) throw new Error('User not found');
+
+  const pl = user.playlists.find(p => p.id === playlistId);
+  if (!pl) throw new Error('Playlist not found');
+
+  pl.trackIds = pl.trackIds.filter(id => id !== trackId);
+  pl.tracks = pl.tracks.filter(t => t.id !== trackId);
+  saveUsers(users);
+  return pl;
+}
+
 export function addTrackToUserPlaylist(userId: string, playlistId: string, track: Track): UserPlaylist {
   const users = ensureDbFile();
   const user = users.find(u => u.id === userId);
@@ -337,6 +362,52 @@ export async function addTrackToSupabasePlaylist(userId: string, playlistId: str
       track_id: track.id,
       track_data: track
     });
+
+  // Re-fetch playlist
+  const { data: pl } = await supabase
+    .from('playlists')
+    .select('*')
+    .eq('id', playlistId)
+    .single();
+
+  const { data: trackRows } = await supabase
+    .from('playlist_tracks')
+    .select('track_id, track_data')
+    .eq('playlist_id', playlistId)
+    .order('position', { ascending: true });
+
+  return {
+    id: pl.id,
+    name: pl.name,
+    description: pl.description || '',
+    trackIds: (trackRows || []).map(t => t.track_id),
+    tracks: (trackRows || []).map(t => t.track_data as Track),
+    createdAt: pl.created_at
+  };
+}
+
+
+export async function deleteSupabasePlaylist(userId: string, playlistId: string): Promise<boolean> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) throw new Error('Supabase client not initialized');
+
+  // Delete tracks first
+  await supabase.from('playlist_tracks').delete().eq('playlist_id', playlistId);
+  // Delete playlist
+  const { error } = await supabase.from('playlists').delete().eq('id', playlistId).eq('user_id', userId);
+  if (error) throw new Error(error.message);
+  return true;
+}
+
+export async function removeTrackFromSupabasePlaylist(userId: string, playlistId: string, trackId: string): Promise<UserPlaylist> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) throw new Error('Supabase client not initialized');
+
+  await supabase
+    .from('playlist_tracks')
+    .delete()
+    .eq('playlist_id', playlistId)
+    .eq('track_id', trackId);
 
   // Re-fetch playlist
   const { data: pl } = await supabase

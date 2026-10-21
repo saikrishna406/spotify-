@@ -502,6 +502,46 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+
+  // SPOTIFY REA: Global Keyboard Shortcuts (Space, Ctrl+Arrows, Volume, Mute)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return; // Don't intercept while typing in forms
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        next();
+      } else if (e.code === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        prev();
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        seek(stateRef.current.currentTime + 5);
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        seek(stateRef.current.currentTime - 5);
+      } else if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        setVolume(stateRef.current.volume + 0.1);
+      } else if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        setVolume(stateRef.current.volume - 0.1);
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        toggleMute();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [togglePlay, next, prev, seek, setVolume, toggleMute]);
+
   const playerState: PlayerState = {
     currentTrack,
     isPlaying,

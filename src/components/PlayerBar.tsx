@@ -45,6 +45,7 @@ export default function PlayerBar({
     analyserNode
   } = useAudio();
   const { toggleLike, isLiked } = useAuth();
+  const [audioQuality, setAudioQuality] = React.useState<'HD 320k' | 'Normal'>('HD 320k');
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -338,6 +339,16 @@ export default function PlayerBar({
           title="Queue"
         >
           <ListMusic className="w-5 h-5" />
+        </button>
+
+        {/* Audio Quality Switcher (Pillar 1) */}
+        <button
+          onClick={() => setAudioQuality(q => q === 'HD 320k' ? 'Normal' : 'HD 320k')}
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-bold text-white transition hover:scale-105"
+          title="Toggle Streaming Quality"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-spotify-green animate-pulse" />
+          <span>{audioQuality}</span>
         </button>
 
         {/* Volume */}

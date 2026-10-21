@@ -5,6 +5,7 @@ import { User, Track, UserPlaylist } from '@/types';
 import AuthModal from '@/components/AuthModal';
 import SpotifySplashScreen from '@/components/SpotifySplashScreen';
 import CompulsoryAuthGate from '@/components/CompulsoryAuthGate';
+import AddToPlaylistModal from '@/components/AddToPlaylistModal';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +16,9 @@ interface AuthContextType {
   toggleLike: (track: Track) => Promise<boolean>;
   createPlaylist: (name: string, desc?: string) => Promise<UserPlaylist | null>;
   addTrackToPlaylist: (playlistId: string, track: Track) => Promise<boolean>;
+  deletePlaylist: (playlistId: string) => Promise<boolean>;
+  removeTrackFromPlaylist: (playlistId: string, trackId: string) => Promise<boolean>;
+  openAddToPlaylist: (track: Track) => void;
   isLiked: (trackId: string) => boolean;
   openAuthModal: (mode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
@@ -27,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register');
+  const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<Track | null>(null);
 
   const fetchSession = async () => {
     try {
@@ -56,6 +61,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
+  };
+
+  const openAddToPlaylist = (track: Track) => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    setAddToPlaylistTrack(track);
+  };
+
+  const closeAddToPlaylist = () => {
+    setAddToPlaylistTrack(null);
   };
 
   const login = async (username: string, pass: string) => {
@@ -171,6 +188,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deletePlaylist = async (playlistId: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const res = await fetch('/api/user/playlists?playlistId=' + encodeURIComponent(playlistId), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setUser({
+          ...user,
+          playlists: user.playlists.filter(p => p.id !== playlistId)
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const removeTrackFromPlaylist = async (playlistId: string, trackId: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const res = await fetch('/api/user/playlists?playlistId=' + encodeURIComponent(playlistId) + '&trackId=' + encodeURIComponent(trackId), {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser({
+          ...user,
+          playlists: user.playlists.map(p => p.id === playlistId ? data.playlist : p)
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
   const isLiked = (trackId: string): boolean => {
     return user ? user.likedSongIds.includes(trackId) : false;
   };
@@ -185,6 +241,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toggleLike,
       createPlaylist,
       addTrackToPlaylist,
+      deletePlaylist,
+      removeTrackFromPlaylist,
+      openAddToPlaylist,
       isLiked,
       openAuthModal,
       closeAuthModal
@@ -200,6 +259,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isOpen={isAuthModalOpen}
             onClose={closeAuthModal}
             initialTab={authModalMode}
+          />
+          <AddToPlaylistModal
+            track={addToPlaylistTrack}
+            isOpen={!!addToPlaylistTrack}
+            onClose={closeAddToPlaylist}
           />
         </>
       )}

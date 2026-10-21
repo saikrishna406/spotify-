@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import TopNav from '@/components/TopNav';
 import PlaylistCard from '@/components/PlaylistCard';
 import TrackRow from '@/components/TrackRow';
+import ArtistView from '@/components/ArtistView';
 import PlayerBar from '@/components/PlayerBar';
 import QueueDrawer from '@/components/QueueDrawer';
 import LyricsView from '@/components/LyricsView';
@@ -13,11 +14,11 @@ import MobileLibraryDrawer from '@/components/MobileLibraryDrawer';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
 import { Playlist, Track } from '@/types';
-import { Play, Pause, Heart, ChevronRight, Clock } from 'lucide-react';
+import { Play, Pause, Heart, ChevronRight, Clock, Trash2 } from 'lucide-react';
 
 export default function HomePage() {
   const { playTrack, togglePlay, state } = useAudio();
-  const { user, createPlaylist, isLiked, toggleLike, openAuthModal } = useAuth();
+  const { user, createPlaylist, deletePlaylist, removeTrackFromPlaylist, isLiked, toggleLike, openAuthModal } = useAuth();
 
   // Navigation / View State
   const [activeTab, setActiveTab] = useState<'all' | 'music' | 'podcasts'>('all');
@@ -27,6 +28,7 @@ export default function HomePage() {
 
   // Selected Playlist / Album View
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [playlistTracks, setPlaylistTracks] = useState<Track[]>([]);
   const [loadingTracks, setLoadingTracks] = useState(false);
 
@@ -76,6 +78,7 @@ export default function HomePage() {
   // Load Playlist or Album Tracks
   const handleSelectPlaylist = async (playlist: Playlist) => {
     setIsViewingLikedSongs(false);
+    setSelectedArtist(null);
     setSelectedPlaylist(playlist);
     setLoadingTracks(true);
 
@@ -121,6 +124,7 @@ export default function HomePage() {
 
   const handleHomeClick = () => {
     setSelectedPlaylist(null);
+    setSelectedArtist(null);
     setIsViewingLikedSongs(false);
     setSearchValue('');
     setActiveTab('all');
@@ -135,6 +139,7 @@ export default function HomePage() {
       return;
     }
     setSelectedPlaylist(null);
+    setSelectedArtist(null);
     setIsViewingLikedSongs(true);
   };
 
@@ -157,8 +162,14 @@ export default function HomePage() {
 
         {/* Viewport Scroll Area */}
         <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 pb-36 md:pb-6">
-          {/* SEARCH RESULTS VIEW */}
-          {searchValue.trim() ? (
+          {/* ARTIST PROFILE VIEW (Pillar 5) */}
+          {selectedArtist ? (
+            <ArtistView
+              artistName={selectedArtist}
+              onBack={() => setSelectedArtist(null)}
+              onSelectArtist={setSelectedArtist}
+            />
+          ) : searchValue.trim() ? (
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">
@@ -182,6 +193,7 @@ export default function HomePage() {
                       track={track}
                       index={idx}
                       onPlay={(t) => playTrack(t, searchResults)}
+                      onArtistClick={setSelectedArtist}
                     />
                   ))}
                 </div>
@@ -230,6 +242,7 @@ export default function HomePage() {
                       track={track}
                       index={idx}
                       onPlay={(t) => playTrack(t, user.likedSongsData)}
+                      onArtistClick={setSelectedArtist}
                     />
                   ))}
                 </div>
@@ -298,6 +311,20 @@ export default function HomePage() {
                 >
                   ← Back to Home
                 </button>
+                {user?.playlists.some(p => p.id === selectedPlaylist?.id) && (
+                  <button
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to delete this playlist?')) {
+                        await deletePlaylist(selectedPlaylist.id);
+                        setSelectedPlaylist(null);
+                      }
+                    }}
+                    className="text-xs font-semibold text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-red-500/30 hover:bg-red-500/10 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Playlist</span>
+                  </button>
+                )}
               </div>
 
               {/* Tracks Table */}
@@ -319,13 +346,24 @@ export default function HomePage() {
                       track={track}
                       index={idx}
                       onPlay={(t) => playTrack(t, playlistTracks)}
+                      onArtistClick={setSelectedArtist}
+                      onRemoveFromPlaylist={
+                        user?.playlists.some(p => p.id === selectedPlaylist?.id)
+                          ? async (trackId) => {
+                              if (selectedPlaylist) {
+                                await removeTrackFromPlaylist(selectedPlaylist.id, trackId);
+                                setPlaylistTracks(prev => prev.filter(t => t.id !== trackId));
+                              }
+                            }
+                          : undefined
+                      }
                     />
                   ))
                 )}
               </div>
             </div>
           ) : (
-            /* HOME DEFAULT VIEW (Matches User Screenshot) */
+            /* HOME DEFAULT VIEW */
             <div className="flex flex-col gap-8 pb-12">
               {/* Category Pills: All, Music, Podcasts */}
               <div className="flex items-center gap-2">
