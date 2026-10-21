@@ -2,7 +2,7 @@ import { isSupabaseConfigured, createClient as createSupabaseServerClient } from
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { User, Track, UserPlaylist } from '@/types';
+import { User, Track, UserPlaylist, UserTasteProfile, ListeningEvent } from '@/types';
 
 const isVercel = !!process.env.VERCEL;
 const DATA_DIR = isVercel ? path.join('/tmp', 'music-data') : path.join(process.cwd(), 'data');
@@ -429,5 +429,127 @@ export async function removeTrackFromSupabasePlaylist(userId: string, playlistId
     trackIds: (trackRows || []).map(t => t.track_id),
     tracks: (trackRows || []).map(t => t.track_data as Track),
     createdAt: pl.created_at
+  };
+}
+
+// ==========================================
+// USER LISTENING BEHAVIOR & TASTE PROFILING
+// ==========================================
+
+export async function recordListeningEventInDb(
+  userId: string,
+  track: Track,
+  eventType: 'complete' | 'skip' | 'replay' | 'like',
+  dwellSeconds = 0
+): Promise<void> {
+  // 1. Try Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createSupabaseServerClient();
+      if (supabase) {
+        await supabase.from('listening_events').insert({
+          user_id: userId,
+          track_id: track.id,
+          track_data: track,
+          event_type: eventType,
+          dwell_seconds: dwellSeconds
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('[DB] Supabase listening_events insert failed, falling back to local:', e);
+    }
+  }
+
+  // 2. Local fallback
+  try {
+    const users = ensureDbFile();
+    const user: any = users.find(u => u.id === userId);
+    if (user) {
+      if (!user.listeningEvents) user.listeningEvents = [];
+      user.listeningEvents.unshift({
+        trackId: track.id,
+        eventType,
+        dwellSeconds,
+        createdAt: new Date().toISOString()
+      });
+      if (user.listeningEvents.length > 100) {
+        user.listeningEvents.pop();
+      }
+      saveUsers(users);
+    }
+  } catch (err) {
+    // Non-fatal
+  }
+}
+
+export async function getUserTasteProfileFromDb(userId: string): Promise<UserTasteProfile | null> {
+  // 1. Try Supabase
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createSupabaseServerClient();
+      if (supabase) {
+        // Fetch recently skipped track IDs
+        const { data: skipRows } = await supabase
+          .from('listening_events')
+          .select('track_id')
+          .eq('user_id', userId)
+          .eq('event_type', 'skip')
+          .order('created_at', { ascending: false })
+          .limit(25);
+
+        const recentlySkippedTrackIds = (skipRows || []).map(r => r.track_id);
+
+        // Fetch user preferences
+        const { data: pref } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (pref) {
+          return {
+            preferredLanguages: pref.preferred_languages || [],
+            topArtists: pref.top_artists || {},
+            topMoods: pref.top_moods || {},
+            totalPlays: 0,
+            totalCompletions: 0,
+            totalSkips: recentlySkippedTrackIds.length,
+            recentlySkippedTrackIds
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[DB] Supabase getUserTasteProfile error:', e);
+    }
+  }
+
+  // 2. Local fallback
+  const user = findUserById(userId);
+  if (!user) return null;
+
+  const topArtists: Record<string, number> = {};
+  const preferredLanguages: string[] = [];
+
+  for (const t of user.likedSongsData || []) {
+    if (t.artists) {
+      for (const a of t.artists.split(',')) {
+        const clean = a.trim();
+        topArtists[clean] = (topArtists[clean] || 0) + 2;
+      }
+    }
+    if (t.language && !preferredLanguages.includes(t.language.toLowerCase())) {
+      preferredLanguages.push(t.language.toLowerCase());
+    }
+  }
+
+  return {
+    preferredLanguages,
+    topArtists,
+    topMoods: {},
+    totalPlays: 0,
+    totalCompletions: 0,
+    totalSkips: 0,
+    recentlySkippedTrackIds: []
   };
 }

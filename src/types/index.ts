@@ -59,4 +59,58 @@ export interface PlayerState {
   userQueue: Track[];
   contextQueue: Track[];
   history: Track[];
+  isSmartRadio: boolean;
+  nextRecommendation: RecommendedTrack | null;
+}
+
+export type MoodCategory =
+  | 'romantic_melody'
+  | 'energetic_dance'
+  | 'chill_lofi'
+  | 'melancholic_sad'
+  | 'folk_acoustic'
+  | 'anthem_inspirational';
+
+export interface SongProfile {
+  trackId: string;
+  language: string;
+  mood: MoodCategory;
+  moodLabel: string;
+  energyLevel: number; // 0.0 (gentle/slow) to 1.0 (intense/fast)
+  danceability: number; // 0.0 to 1.0
+  valence: number; // 0.0 (melancholic) to 1.0 (euphoric)
+  tempoEstimate: 'slow' | 'medium' | 'fast';
+  primaryArtists: string[];
+  composer?: string;
+  keywords: string[];
+}
+
+export interface RecommendedTrack {
+  track: Track;
+  score: number;
+  matchPercentage: number;
+  mood: MoodCategory;
+  moodLabel: string;
+  reasons: string[];
+  primaryReason: string;
+}
+
+export interface UserTasteProfile {
+  preferredLanguages: string[];
+  topArtists: Record<string, number>;
+  topMoods: Record<string, number>;
+  totalPlays: number;
+  totalCompletions: number;
+  totalSkips: number;
+  recentlySkippedTrackIds: string[];
+}
+
+export interface ListeningEvent {
+  id?: string;
+  userId?: string;
+  trackId: string;
+  trackData: Track;
+  eventType: 'complete' | 'skip' | 'replay' | 'like';
+  dwellSeconds: number;
+  createdAt?: string;
 }

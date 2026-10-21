@@ -162,3 +162,51 @@ create policy "Users can remove liked songs" on public.liked_songs
   for delete using ((select auth.uid()) = user_id);
 
 create index if not exists idx_liked_songs_user_id on public.liked_songs(user_id);
+
+-- --------------------------------------------------------------------
+-- 5. LISTENING_EVENTS TABLE (Tracks plays, completions, skips, replays)
+-- --------------------------------------------------------------------
+create table if not exists public.listening_events (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  track_id text not null,
+  track_data jsonb not null,
+  event_type text not null, -- 'complete', 'skip', 'replay', 'like'
+  dwell_seconds integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.listening_events enable row level security;
+
+drop policy if exists "Users can view their own listening events" on public.listening_events;
+create policy "Users can view their own listening events" on public.listening_events
+  for select using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can insert their own listening events" on public.listening_events;
+create policy "Users can insert their own listening events" on public.listening_events
+  for insert with check ((select auth.uid()) = user_id);
+
+create index if not exists idx_listening_events_user_id on public.listening_events(user_id);
+create index if not exists idx_listening_events_track_id on public.listening_events(track_id);
+create index if not exists idx_listening_events_type on public.listening_events(event_type);
+
+-- --------------------------------------------------------------------
+-- 6. USER_PREFERENCES TABLE (Caches aggregated user taste profile)
+-- --------------------------------------------------------------------
+create table if not exists public.user_preferences (
+  user_id uuid references public.profiles(id) on delete cascade primary key,
+  preferred_languages text[] default '{}',
+  top_artists jsonb default '{}'::jsonb,
+  top_moods jsonb default '{}'::jsonb,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.user_preferences enable row level security;
+
+drop policy if exists "Users can view their own preferences" on public.user_preferences;
+create policy "Users can view their own preferences" on public.user_preferences
+  for select using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can upsert their own preferences" on public.user_preferences;
+create policy "Users can upsert their own preferences" on public.user_preferences
+  for all using ((select auth.uid()) = user_id);

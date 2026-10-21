@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { Track, PlayerState, RepeatMode } from '@/types';
+import { Track, PlayerState, RepeatMode, RecommendedTrack } from '@/types';
+import { getClientUserTaste, recordTrackCompleted, recordTrackSkipped, recordTrackReplayed } from '@/lib/recommendations/behaviorTracker';
 
 interface AudioContextType {
   state: PlayerState;
@@ -14,10 +15,12 @@ interface AudioContextType {
   toggleMute: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
+  toggleSmartRadio: () => void;
   enqueue: (track: Track) => void;
   removeFromQueue: (index: number) => void;
   next: () => Promise<void>;
   prev: () => void;
+  fetchNextRecommendation: (seed?: Track) => Promise<RecommendedTrack | null>;
   analyserNode: AnalyserNode | null;
 }
 
@@ -37,6 +40,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
+  // Smart Mood Recommendation System State
+  const [isSmartRadio, setIsSmartRadio] = useState(true);
+  const [nextRecommendation, setNextRecommendation] = useState<RecommendedTrack | null>(null);
+
   // Spotify Queue Hierarchy: User Queue (Priority 1) -> Context Queue (Priority 2)
   const [userQueue, setUserQueue] = useState<Track[]>([]);
   const [contextQueue, setContextQueue] = useState<Track[]>([]);
@@ -44,9 +51,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // Guard flag to prevent duplicate transition events during stream end
   const isTransitioningRef = useRef(false);
+  const isPrefetchingRef = useRef(false);
 
   // Synchronized Mutable State Ref (Spotify Architecture Pattern)
-  // Ensures event listeners on the native HTMLAudioElement always read live playback state
   const stateRef = useRef({
     currentTrack,
     isPlaying,
@@ -57,6 +64,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     previousVolume,
     isShuffle,
     repeatMode,
+    isSmartRadio,
+    nextRecommendation,
     userQueue,
     contextQueue,
     history
@@ -74,6 +83,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       previousVolume,
       isShuffle,
       repeatMode,
+      isSmartRadio,
+      nextRecommendation,
       userQueue,
       contextQueue,
       history
@@ -88,6 +99,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     previousVolume,
     isShuffle,
     repeatMode,
+    isSmartRadio,
+    nextRecommendation,
     userQueue,
     contextQueue,
     history
@@ -100,6 +113,40 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
     return `/api/music/stream?id=${track.id}`;
   };
+
+  // Pre-fetch next mood-based recommendation in background
+  const fetchNextRecommendation = useCallback(async (seed?: Track): Promise<RecommendedTrack | null> => {
+    const seedTrack = seed || stateRef.current.currentTrack;
+    if (!seedTrack || isPrefetchingRef.current) return null;
+
+    isPrefetchingRef.current = true;
+    try {
+      const userTaste = getClientUserTaste();
+      const res = await fetch('/api/music/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seedTrack,
+          recentHistory: stateRef.current.history.slice(0, 5),
+          userTaste
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.topNext) {
+          setNextRecommendation(data.topNext);
+          stateRef.current.nextRecommendation = data.topNext;
+          return data.topNext;
+        }
+      }
+    } catch (err) {
+      console.warn('[Smart Radio] Pre-fetch recommendation failed:', err);
+    } finally {
+      isPrefetchingRef.current = false;
+    }
+    return null;
+  }, []);
 
   // Internal Track Loader & Player
   const playTrackInternal = useCallback(async (track: Track, newContext?: Track[]): Promise<void> => {
@@ -114,6 +161,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     setCurrentTrack(track);
     stateRef.current.currentTrack = track;
+    setNextRecommendation(null);
+    stateRef.current.nextRecommendation = null;
 
     if (track.duration && track.duration > 0) {
       setDuration(track.duration);
@@ -140,7 +189,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(false);
         stateRef.current.isPlaying = false;
         
-        // Auto-recover / Auto-skip if stream fails to play
+        // Auto-recover if stream fails
         setTimeout(() => {
           if (!stateRef.current.isPlaying && audio.error) {
             console.warn('[Spotify Audio Engine] Auto-skipping failed stream track:', track.name);
@@ -148,6 +197,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }
         }, 1200);
       }
+    }
+
+    // Pre-fetch next smart mood recommendation for this newly playing track
+    if (stateRef.current.isSmartRadio) {
+      setTimeout(() => {
+        fetchNextRecommendation(track);
+      }, 500);
     }
 
     // Spotify Standard: Sync with OS MediaSession
@@ -166,10 +222,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         });
         navigator.mediaSession.playbackState = 'playing';
       } catch (e) {
-        // MediaSession not supported or restricted in environment
+        // MediaSession not supported or restricted
       }
     }
-  }, []);
+  }, [fetchNextRecommendation]);
 
   // Public playTrack API
   const playTrack = useCallback(async (track: Track, newContext?: Track[]): Promise<void> => {
@@ -177,13 +233,28 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     await playTrackInternal(track, newContext);
   }, [playTrackInternal]);
 
-  // SPOTIFY REA: Advance to Next Track in Queue
+  // Advance to Next Track in Queue (with Skip Tracking & Mood Recommendations)
   const next = useCallback(async (): Promise<void> => {
     if (isTransitioningRef.current) return;
     isTransitioningRef.current = true;
 
     try {
-      const { userQueue: uQueue, contextQueue: cQueue, currentTrack: curr, isShuffle: shuffle, repeatMode: repeat } = stateRef.current;
+      const {
+        userQueue: uQueue,
+        contextQueue: cQueue,
+        currentTrack: curr,
+        currentTime: curTime,
+        duration: dur,
+        isShuffle: shuffle,
+        repeatMode: repeat,
+        isSmartRadio: smartRadio,
+        nextRecommendation: preloadedRec
+      } = stateRef.current;
+
+      // Track skip behavior: If skipped within 30 seconds or < 30% duration
+      if (curr && curTime < 30 && (dur === 0 || curTime / dur < 0.30)) {
+        recordTrackSkipped(curr, undefined, curTime);
+      }
 
       // 1. Priority 1: User Queue (Manually queued songs take first priority)
       if (uQueue.length > 0) {
@@ -195,13 +266,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // 2. Priority 2: Context Queue (Album / Playlist / Search results)
+      // 2. Priority 2: Smart Mood Radio (If enabled and preloaded recommendation exists)
+      if (smartRadio && preloadedRec?.track) {
+        const recTrack = preloadedRec.track;
+        setNextRecommendation(null);
+        stateRef.current.nextRecommendation = null;
+        await playTrackInternal(recTrack);
+        return;
+      }
+
+      // 3. Priority 3: Context Queue (Album / Playlist / Search results)
       if (cQueue.length > 0) {
         const currentIndex = cQueue.findIndex(t => t.id === curr?.id);
         let nextIndex = -1;
 
         if (shuffle) {
-          // Shuffle mode: Pick an unplayed song from the context queue
           if (cQueue.length > 1) {
             const availableIndices = cQueue
               .map((_, i) => i)
@@ -212,10 +291,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           if (currentIndex >= 0 && currentIndex < cQueue.length - 1) {
-            // Next sequential song in the album or playlist
             nextIndex = currentIndex + 1;
           } else if (repeat === 'context') {
-            // Repeat playlist is on: loop back to track 0
             nextIndex = 0;
           }
         }
@@ -226,34 +303,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // 3. Priority 3: Spotify Infinite Autoplay (Artist & Genre Radio)
-      // When playlist reaches the end and repeat is off, Spotify automatically fetches recommendations
+      // 4. Priority 4: Dynamic Mood-Based Autoplay Fallback
       if (curr) {
         try {
-          console.log('[Spotify Autoplay] Reached end of playlist. Fetching recommendations for:', curr.artists);
-          const searchSeed = curr.artists.split(',')[0].trim() || curr.language || 'Trending Hits';
-          const res = await fetch(`/api/music/search?q=${encodeURIComponent(searchSeed)}&limit=15`);
-          const data = await res.json();
-          const songs: Track[] = data.songs || [];
-          
-          const existingIds = new Set([curr.id, ...cQueue.map(t => t.id)]);
-          const freshSongs = songs.filter(s => !existingIds.has(s.id));
-          const candidateTracks = freshSongs.length > 0 ? freshSongs : songs;
-
-          if (candidateTracks.length > 0) {
-            const nextTrack = candidateTracks[0];
-            const updatedContext = [...cQueue, ...candidateTracks];
-            setContextQueue(updatedContext);
-            stateRef.current.contextQueue = updatedContext;
-            await playTrackInternal(nextTrack);
+          const rec = await fetchNextRecommendation(curr);
+          if (rec?.track) {
+            await playTrackInternal(rec.track);
             return;
           }
         } catch (err) {
-          console.warn('[Spotify Autoplay] Recommendation fetch failed, falling back to loop:', err);
+          console.warn('[Smart Radio] On-demand recommendation failed:', err);
         }
       }
 
-      // 4. Fallback: Loop context if available
+      // 5. Fallback: Loop context if available
       if (cQueue.length > 0) {
         await playTrackInternal(cQueue[0]);
       }
@@ -262,23 +325,70 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         isTransitioningRef.current = false;
       }, 500);
     }
-  }, [playTrackInternal]);
+  }, [playTrackInternal, fetchNextRecommendation]);
 
-  // SPOTIFY REA: Handle Track End
-  const handleTrackEnded = useCallback(() => {
-    const { repeatMode: repeat, currentTrack: curr } = stateRef.current;
-    console.log('[Spotify Audio Engine] Track completed:', curr?.name, '| RepeatMode:', repeat);
+  // SPOTIFY REA: Handle Natural Track Completion
+  const handleTrackEnded = useCallback(async () => {
+    const {
+      repeatMode: repeat,
+      currentTrack: curr,
+      duration: dur,
+      isSmartRadio: smartRadio,
+      nextRecommendation: preloadedRec,
+      userQueue: uQueue,
+      contextQueue: cQueue
+    } = stateRef.current;
+
+    console.log('[Spotify Audio Engine] Track finished:', curr?.name, '| SmartRadio:', smartRadio);
 
     // Spotify Repeat 1: Replay exact same song
     if (repeat === 'track' && audioRef.current) {
+      if (curr) recordTrackReplayed(curr);
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.warn('Repeat track replay error:', e));
       return;
     }
 
-    // Auto-advance to next track in queue
-    next();
-  }, [next]);
+    // Record completion in behavior tracker
+    if (curr) {
+      recordTrackCompleted(curr, undefined, dur);
+    }
+
+    // Priority 1: User Queue (Manually queued songs take first priority)
+    if (uQueue.length > 0) {
+      await next();
+      return;
+    }
+
+    // Priority 2: Smart Mood Recommendation
+    // When a song finishes and smart radio is ON, automatically recommend and play another song
+    // with a similar musical feel (mood, style, energy, tempo), rather than simply playing the next track!
+    if (smartRadio && curr) {
+      if (preloadedRec?.track) {
+        console.log('[Smart Mood Radio] Auto-playing pre-fetched mood match:', preloadedRec.track.name, '(', preloadedRec.primaryReason, ')');
+        const recTrack = preloadedRec.track;
+        setNextRecommendation(null);
+        stateRef.current.nextRecommendation = null;
+        await playTrackInternal(recTrack);
+        return;
+      }
+
+      // If pre-fetch hasn't finished, fetch recommendation directly
+      try {
+        const freshRec = await fetchNextRecommendation(curr);
+        if (freshRec?.track) {
+          console.log('[Smart Mood Radio] Auto-playing fresh mood match:', freshRec.track.name, '(', freshRec.primaryReason, ')');
+          await playTrackInternal(freshRec.track);
+          return;
+        }
+      } catch (err) {
+        console.warn('[Smart Mood Radio] Failed to fetch on-demand recommendation:', err);
+      }
+    }
+
+    // Fall back to standard next track in queue
+    await next();
+  }, [next, playTrackInternal, fetchNextRecommendation]);
 
   // Previous Track
   const prev = useCallback(() => {
@@ -305,11 +415,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (cQueue.length > 0) {
       const currentIndex = cQueue.findIndex(t => t.id === curr?.id);
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : cQueue.length - 1;
-      playTrackInternal(cQueue[prevIndex]);
+      if (cQueue[prevIndex]) {
+        playTrackInternal(cQueue[prevIndex]);
+      }
     }
   }, [playTrackInternal]);
 
-  // Stable Handler References to avoid Stale Closures in Audio Listeners
+  // Keep references to stable handlers
   const handleTrackEndedRef = useRef(handleTrackEnded);
   const nextRef = useRef(next);
   const prevRef = useRef(prev);
@@ -337,8 +449,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setDuration(dur);
         stateRef.current.duration = dur;
 
+        // Auto-prefetch mood recommendation when passing 60% progress
+        if (stateRef.current.isSmartRadio && !stateRef.current.nextRecommendation && !isPrefetchingRef.current) {
+          if (curr / dur > 0.60 && stateRef.current.currentTrack) {
+            fetchNextRecommendation(stateRef.current.currentTrack);
+          }
+        }
+
         // Watchdog: If track is within 0.25 seconds of the end and not paused, trigger auto-advance
-        // This solves browsers where audio stream reaches end without dispatching 'ended' event
         if (dur > 2 && curr >= dur - 0.25 && !audio.paused && !isTransitioningRef.current) {
           handleTrackEndedRef.current();
         }
@@ -376,7 +494,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.warn('[Spotify Audio Engine] Audio error occurred:', audio.error?.code, audio.error?.message);
       setIsPlaying(false);
       stateRef.current.isPlaying = false;
-      // Auto-skip corrupt or dead track after brief pause
       if (!isTransitioningRef.current) {
         setTimeout(() => {
           handleTrackEndedRef.current();
@@ -416,7 +533,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audio.removeEventListener('error', onError);
       audio.pause();
     };
-  }, []);
+  }, [fetchNextRecommendation]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -486,6 +603,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const toggleSmartRadio = useCallback(() => {
+    setIsSmartRadio(prev => {
+      const nextVal = !prev;
+      stateRef.current.isSmartRadio = nextVal;
+      if (nextVal && stateRef.current.currentTrack) {
+        fetchNextRecommendation(stateRef.current.currentTrack);
+      } else {
+        setNextRecommendation(null);
+        stateRef.current.nextRecommendation = null;
+      }
+      return nextVal;
+    });
+  }, [fetchNextRecommendation]);
+
   const enqueue = useCallback((track: Track) => {
     setUserQueue(prev => {
       const nextQueue = [...prev, track];
@@ -502,13 +633,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-
-  // SPOTIFY REA: Global Keyboard Shortcuts (Space, Ctrl+Arrows, Volume, Mute)
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return; // Don't intercept while typing in forms
+        return;
       }
 
       if (e.code === 'Space') {
@@ -551,6 +681,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isMuted,
     isShuffle,
     repeatMode,
+    isSmartRadio,
+    nextRecommendation,
     userQueue,
     contextQueue,
     history
@@ -568,10 +700,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       toggleMute,
       toggleShuffle,
       toggleRepeat,
+      toggleSmartRadio,
       enqueue,
       removeFromQueue,
       next,
       prev,
+      fetchNextRecommendation,
       analyserNode: analyser
     }}>
       {children}
