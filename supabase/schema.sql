@@ -1,16 +1,12 @@
 -- ====================================================================
--- SUPABASE DATABASE SCHEMA FOR SPOTIFY WEB CLONE (MULTI-USER PLAYLISTS)
+-- SUPABASE DATABASE SCHEMA FOR SPOTIFY WEB CLONE (IDEMPOTENT / SAFE TO RE-RUN)
 -- ====================================================================
--- Run this script in the Supabase Dashboard:
--- 1. Log in to your project at https://supabase.com/dashboard
--- 2. Open 'SQL Editor' from the left sidebar
--- 3. Click '+ New query', paste this entire script, and click 'Run' (or press Ctrl + Enter)
 
--- Enable UUID extension if not already enabled
+-- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
 -- --------------------------------------------------------------------
--- 1. PROFILES TABLE (Linked to Supabase Auth users)
+-- 1. PROFILES TABLE
 -- --------------------------------------------------------------------
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
@@ -23,16 +19,19 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Public profiles are viewable by everyone." on public.profiles;
 create policy "Public profiles are viewable by everyone." on public.profiles
   for select using (true);
 
+drop policy if exists "Users can insert their own profile." on public.profiles;
 create policy "Users can insert their own profile." on public.profiles
   for insert with check ((select auth.uid()) = id);
 
+drop policy if exists "Users can update their own profile." on public.profiles;
 create policy "Users can update their own profile." on public.profiles
   for update using ((select auth.uid()) = id);
 
--- Auto-create profile trigger on auth signup
+-- Trigger function for automatic profile creation
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -42,7 +41,11 @@ begin
     coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
     coalesce(new.raw_user_meta_data->>'display_name', new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
     coalesce(new.raw_user_meta_data->>'avatar_url', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80')
-  );
+  )
+  on conflict (id) do update set
+    username = excluded.username,
+    display_name = excluded.display_name,
+    avatar_url = excluded.avatar_url;
   return new;
 end;
 $$ language plpgsql security definer;
@@ -53,7 +56,7 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- --------------------------------------------------------------------
--- 2. PLAYLISTS TABLE (Stores custom playlists per user)
+-- 2. PLAYLISTS TABLE
 -- --------------------------------------------------------------------
 create table if not exists public.playlists (
   id uuid default gen_random_uuid() primary key,
@@ -66,23 +69,26 @@ create table if not exists public.playlists (
 
 alter table public.playlists enable row level security;
 
+drop policy if exists "Users can view their own playlists" on public.playlists;
 create policy "Users can view their own playlists" on public.playlists
   for select using ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can create playlists" on public.playlists;
 create policy "Users can create playlists" on public.playlists
   for insert with check ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can update their own playlists" on public.playlists;
 create policy "Users can update their own playlists" on public.playlists
   for update using ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can delete their own playlists" on public.playlists;
 create policy "Users can delete their own playlists" on public.playlists
   for delete using ((select auth.uid()) = user_id);
 
--- Performance index for fast per-user playlist lookup
 create index if not exists idx_playlists_user_id on public.playlists(user_id);
 
 -- --------------------------------------------------------------------
--- 3. PLAYLIST_TRACKS TABLE (Stores songs added to each playlist)
+-- 3. PLAYLIST_TRACKS TABLE
 -- --------------------------------------------------------------------
 create table if not exists public.playlist_tracks (
   id uuid default gen_random_uuid() primary key,
@@ -96,6 +102,7 @@ create table if not exists public.playlist_tracks (
 
 alter table public.playlist_tracks enable row level security;
 
+drop policy if exists "Users can view tracks in their playlists" on public.playlist_tracks;
 create policy "Users can view tracks in their playlists" on public.playlist_tracks
   for select using (
     exists (
@@ -105,6 +112,7 @@ create policy "Users can view tracks in their playlists" on public.playlist_trac
     )
   );
 
+drop policy if exists "Users can add tracks to their playlists" on public.playlist_tracks;
 create policy "Users can add tracks to their playlists" on public.playlist_tracks
   for insert with check (
     exists (
@@ -114,6 +122,7 @@ create policy "Users can add tracks to their playlists" on public.playlist_track
     )
   );
 
+drop policy if exists "Users can remove tracks from their playlists" on public.playlist_tracks;
 create policy "Users can remove tracks from their playlists" on public.playlist_tracks
   for delete using (
     exists (
@@ -123,12 +132,11 @@ create policy "Users can remove tracks from their playlists" on public.playlist_
     )
   );
 
--- Fast lookup indexes for playlist tracks & ordering
 create index if not exists idx_playlist_tracks_playlist_id on public.playlist_tracks(playlist_id);
 create index if not exists idx_playlist_tracks_position on public.playlist_tracks(playlist_id, position);
 
 -- --------------------------------------------------------------------
--- 4. LIKED_SONGS TABLE (Stores user favorite songs)
+-- 4. LIKED_SONGS TABLE
 -- --------------------------------------------------------------------
 create table if not exists public.liked_songs (
   id uuid default gen_random_uuid() primary key,
@@ -141,14 +149,16 @@ create table if not exists public.liked_songs (
 
 alter table public.liked_songs enable row level security;
 
+drop policy if exists "Users can view their own liked songs" on public.liked_songs;
 create policy "Users can view their own liked songs" on public.liked_songs
   for select using ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can add liked songs" on public.liked_songs;
 create policy "Users can add liked songs" on public.liked_songs
   for insert with check ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can remove liked songs" on public.liked_songs;
 create policy "Users can remove liked songs" on public.liked_songs
   for delete using ((select auth.uid()) = user_id);
 
--- Performance index for user liked songs
 create index if not exists idx_liked_songs_user_id on public.liked_songs(user_id);
