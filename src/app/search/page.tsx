@@ -137,6 +137,7 @@ export default function SearchPage() {
           }}
           onOpenLikedSongs={() => router.push('/')}
           onHomeClick={() => { setSelectedArtist(null); router.push('/'); }}
+          onSelectPlaylist={() => router.push('/')}
         />
 
         {/* Main Content */}

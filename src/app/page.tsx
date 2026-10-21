@@ -13,7 +13,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import MobileLibraryDrawer from '@/components/MobileLibraryDrawer';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
-import { Playlist, Track } from '@/types';
+import { Playlist, Track, UserPlaylist } from '@/types';
 import { Play, Pause, Heart, ChevronRight, Clock, Trash2 } from 'lucide-react';
 
 export default function HomePage() {
@@ -75,14 +75,59 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, [searchValue]);
 
+  // User playlist selection handler
+  const handleSelectUserPlaylist = (userPl: UserPlaylist) => {
+    setIsViewingLikedSongs(false);
+    setSelectedArtist(null);
+    setSearchValue('');
+    const formatted: Playlist = {
+      id: userPl.id,
+      name: userPl.name,
+      description: userPl.description || `Created by ${user?.displayName || 'User'}`,
+      image: (userPl.tracks && userPl.tracks.length > 0)
+        ? userPl.tracks[0].image
+        : (userPl.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80'),
+      owner: user?.displayName || 'You',
+      followerCount: `${userPl.tracks ? userPl.tracks.length : 0} songs`,
+      color: '#1e3a8a',
+      tracks: userPl.tracks || []
+    };
+    setSelectedPlaylist(formatted);
+    setPlaylistTracks(userPl.tracks || []);
+    setLoadingTracks(false);
+  };
+
+  // Keep playlist tracks synced with user.playlists updates
+  useEffect(() => {
+    if (selectedPlaylist && user) {
+      const current = user.playlists.find(p => p.id === selectedPlaylist.id);
+      if (current) {
+        setPlaylistTracks(current.tracks || []);
+        setSelectedPlaylist(prev => prev ? {
+          ...prev,
+          image: (current.tracks && current.tracks.length > 0) ? current.tracks[0].image : prev.image,
+          followerCount: `${current.tracks ? current.tracks.length : 0} songs`
+        } : null);
+      }
+    }
+  }, [user?.playlists]);
+
   // Load Playlist or Album Tracks
   const handleSelectPlaylist = async (playlist: Playlist) => {
     setIsViewingLikedSongs(false);
     setSelectedArtist(null);
     setSelectedPlaylist(playlist);
-    setLoadingTracks(true);
 
-    // Search or resolve tracks for this playlist / album
+    // Check if this is a user's own custom playlist
+    const userCustomPl = user?.playlists.find(p => p.id === playlist.id);
+    if (userCustomPl || (playlist.tracks && playlist.tracks.length > 0)) {
+      setPlaylistTracks(userCustomPl ? userCustomPl.tracks : (playlist.tracks || []));
+      setLoadingTracks(false);
+      return;
+    }
+
+    setLoadingTracks(true);
+    // Search or resolve tracks for this playlist / album from explore shelf
     const query = playlist.name.replace(/\(.*\)/, '').trim();
     try {
       const res = await fetch(`/api/music/search?q=${encodeURIComponent(query)}&limit=15`);
@@ -150,6 +195,9 @@ export default function HomePage() {
         onCreatePlaylist={handleCreatePlaylistPrompt}
         onOpenLikedSongs={handleOpenLiked}
         onHomeClick={handleHomeClick}
+        onSelectPlaylist={handleSelectUserPlaylist}
+        activePlaylistId={selectedPlaylist?.id}
+        isLikedActive={isViewingLikedSongs}
       />
 
       {/* 2. CENTER MAIN CONTENT */}

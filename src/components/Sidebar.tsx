@@ -5,14 +5,25 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, Library, Plus, Heart, Music } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { UserPlaylist } from '@/types';
 
 interface SidebarProps {
   onCreatePlaylist: () => void;
   onOpenLikedSongs: () => void;
   onHomeClick?: () => void;
+  onSelectPlaylist?: (playlist: UserPlaylist) => void;
+  activePlaylistId?: string | null;
+  isLikedActive?: boolean;
 }
 
-export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs, onHomeClick }: SidebarProps) {
+export default function Sidebar({
+  onCreatePlaylist,
+  onOpenLikedSongs,
+  onHomeClick,
+  onSelectPlaylist,
+  activePlaylistId,
+  isLikedActive
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, openAuthModal } = useAuth();
@@ -48,7 +59,7 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs, onHomeClic
           <button
             type="button"
             onClick={handleHomeClick}
-            className={'w-full flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition cursor-pointer text-left ' + (pathname === '/' ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white')}
+            className={'w-full flex items-center gap-4 px-3 py-2.5 rounded-md font-bold text-sm transition cursor-pointer text-left ' + (pathname === '/' && !isLikedActive && !activePlaylistId ? 'text-white bg-white/10' : 'text-spotify-subdued hover:text-white')}
           >
             <Home className="w-6 h-6 shrink-0" />
             <span>Home</span>
@@ -96,13 +107,13 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs, onHomeClic
             {/* Liked Songs Entry */}
             <div
               onClick={onOpenLikedSongs}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group"
+              className={'flex items-center gap-3 p-2 rounded-md cursor-pointer transition group ' + (isLikedActive ? 'bg-white/15 text-white' : 'hover:bg-white/10')}
             >
               <div className="w-12 h-12 rounded bg-gradient-to-br from-[#450af5] to-[#c4efd9] flex items-center justify-center shrink-0 shadow">
                 <Heart className="w-5 h-5 text-white fill-white" />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="font-semibold text-sm text-white truncate group-hover:text-spotify-green transition">
+                <span className={'font-semibold text-sm truncate transition ' + (isLikedActive ? 'text-spotify-green' : 'text-white group-hover:text-spotify-green')}>
                   Liked Songs
                 </span>
                 <span className="text-xs text-spotify-subdued flex items-center gap-1.5">
@@ -112,24 +123,33 @@ export default function Sidebar({ onCreatePlaylist, onOpenLikedSongs, onHomeClic
             </div>
 
             {/* User Custom Playlists */}
-            {user.playlists.map((pl) => (
-              <div
-                key={pl.id}
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer transition group"
-              >
-                <div className="w-12 h-12 rounded bg-spotify-elevated flex items-center justify-center shrink-0 shadow">
-                  <Music className="w-5 h-5 text-spotify-subdued" />
+            {user.playlists.map((pl) => {
+              const isActive = activePlaylistId === pl.id;
+              const coverImg = pl.tracks && pl.tracks.length > 0 ? pl.tracks[0].image : null;
+              return (
+                <div
+                  key={pl.id}
+                  onClick={() => onSelectPlaylist?.(pl)}
+                  className={'flex items-center gap-3 p-2 rounded-md cursor-pointer transition group ' + (isActive ? 'bg-white/15 text-white' : 'hover:bg-white/10')}
+                >
+                  <div className="w-12 h-12 rounded bg-spotify-elevated flex items-center justify-center shrink-0 shadow overflow-hidden">
+                    {coverImg ? (
+                      <img src={coverImg} alt={pl.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Music className={'w-5 h-5 ' + (isActive ? 'text-spotify-green' : 'text-spotify-subdued')} />
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className={'font-semibold text-sm truncate transition ' + (isActive ? 'text-spotify-green' : 'text-white group-hover:text-spotify-green')}>
+                      {pl.name}
+                    </span>
+                    <span className="text-xs text-spotify-subdued truncate">
+                      Playlist • {pl.tracks ? pl.tracks.length : 0} songs
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-semibold text-sm text-white truncate group-hover:text-spotify-green transition">
-                    {pl.name}
-                  </span>
-                  <span className="text-xs text-spotify-subdued truncate">
-                    Playlist • {user.displayName}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           /* GUEST USER LIBRARY PROMPT */
