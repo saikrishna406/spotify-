@@ -15,12 +15,10 @@ interface AudioContextType {
   toggleMute: () => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
-  toggleSmartRadio: () => void;
   enqueue: (track: Track) => void;
   removeFromQueue: (index: number) => void;
   next: () => Promise<void>;
   prev: () => void;
-  fetchNextRecommendation: (seed?: Track) => Promise<RecommendedTrack | null>;
   analyserNode: AnalyserNode | null;
 }
 
@@ -603,21 +601,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const toggleSmartRadio = useCallback(() => {
-    setIsSmartRadio(prev => {
-      const nextVal = !prev;
-      stateRef.current.isSmartRadio = nextVal;
-      if (nextVal && stateRef.current.currentTrack) {
-        fetchNextRecommendation(stateRef.current.currentTrack);
-      } else {
-        setNextRecommendation(null);
-        stateRef.current.nextRecommendation = null;
-      }
-      return nextVal;
-    });
-  }, [fetchNextRecommendation]);
-
-  const enqueue = useCallback((track: Track) => {
+    const enqueue = useCallback((track: Track) => {
     setUserQueue(prev => {
       const nextQueue = [...prev, track];
       stateRef.current.userQueue = nextQueue;
@@ -700,12 +684,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       toggleMute,
       toggleShuffle,
       toggleRepeat,
-      toggleSmartRadio,
       enqueue,
       removeFromQueue,
       next,
       prev,
-      fetchNextRecommendation,
       analyserNode: analyser
     }}>
       {children}

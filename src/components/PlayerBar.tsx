@@ -14,8 +14,7 @@ import {
   Heart,
   ListMusic,
   Maximize2,
-  Mic2,
-  Sparkles
+  Mic2
 } from 'lucide-react';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
@@ -41,7 +40,6 @@ export default function PlayerBar({
     toggleMute,
     toggleShuffle,
     toggleRepeat,
-    toggleSmartRadio,
     next,
     prev,
     analyserNode
@@ -341,20 +339,6 @@ export default function PlayerBar({
           title="Queue"
         >
           <ListMusic className="w-5 h-5" />
-        </button>
-
-        {/* Smart Mood Radio Toggle */}
-        <button
-          onClick={toggleSmartRadio}
-          className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition hover:scale-105 ${
-            state.isSmartRadio
-              ? 'bg-emerald-950/60 text-spotify-green border-emerald-500/40 hover:bg-emerald-900/50'
-              : 'bg-white/5 text-spotify-subdued border-white/10 hover:text-white'
-          }`}
-          title={state.isSmartRadio ? 'Smart Mood Radio: Active (Mood, style & tempo matching)' : 'Smart Mood Radio: Off'}
-        >
-          <Sparkles className={`w-3 h-3 ${state.isSmartRadio ? 'text-spotify-green animate-pulse' : 'text-spotify-subdued'}`} />
-          <span>{state.isSmartRadio ? 'Smart Radio' : 'Radio Off'}</span>
         </button>
 
         {/* Audio Quality Switcher (Pillar 1) */}

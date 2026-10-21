@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Play, Trash2, Clock, ListMusic, Sparkles, Check } from 'lucide-react';
+import { X, Trash2, Clock } from 'lucide-react';
 import { useAudio } from '@/context/AudioContext';
 
 interface QueueDrawerProps {
@@ -9,11 +9,19 @@ interface QueueDrawerProps {
 }
 
 export default function QueueDrawer({ onClose }: QueueDrawerProps) {
-  const { state, playTrack, removeFromQueue, toggleSmartRadio } = useAudio();
+  const { state, playTrack, removeFromQueue } = useAudio();
   const [tab, setTab] = useState<'queue' | 'history'>('queue');
 
+  // Next up tracks: if nextRecommendation exists, place it seamlessly at top of Next Up
+  const nextUpTracks = [
+    ...(state.nextRecommendation ? [state.nextRecommendation.track] : []),
+    ...state.contextQueue.filter(t => 
+      t.id !== state.currentTrack?.id && t.id !== state.nextRecommendation?.track?.id
+    )
+  ];
+
   return (
-    <aside className="fixed inset-0 z-50 md:relative md:w-[340px] md:h-full bg-spotify-base border-l border-white/10 flex flex-col shrink-0 select-none text-white animate-fadeIn">
+    <aside className="fixed inset-0 z-50 md:relative md:w-[320px] md:h-full bg-spotify-base border-l border-white/10 flex flex-col shrink-0 select-none text-white animate-fadeIn">
       {/* Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
         {/* Tab switch */}
@@ -45,28 +53,6 @@ export default function QueueDrawer({ onClose }: QueueDrawerProps) {
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 custom-scrollbar text-sm">
         {tab === 'queue' ? (
           <>
-            {/* Smart Mood Radio Banner */}
-            <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-950/40 to-spotify-elevated border border-emerald-500/20 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-spotify-green animate-pulse" />
-                  <span className="font-bold text-xs text-white">Smart Mood Radio</span>
-                </div>
-                <button
-                  onClick={toggleSmartRadio}
-                  className={'text-[11px] font-bold px-2.5 py-0.5 rounded-full transition cursor-pointer ' + 
-                    (state.isSmartRadio ? 'bg-spotify-green text-black hover:scale-105' : 'bg-white/10 text-spotify-subdued hover:text-white')}
-                >
-                  {state.isSmartRadio ? 'ACTIVE' : 'OFF'}
-                </button>
-              </div>
-              <p className="text-[11px] text-spotify-subdued leading-tight">
-                {state.isSmartRadio 
-                  ? 'Auto-plays next song with matching mood, tempo & style when track finishes.' 
-                  : 'Disabled. Playing standard playlist in sequential order.'}
-              </p>
-            </div>
-
             {/* Now Playing */}
             <div>
               <h4 className="text-xs font-bold text-spotify-subdued uppercase tracking-wider mb-2.5">
@@ -93,12 +79,12 @@ export default function QueueDrawer({ onClose }: QueueDrawerProps) {
               )}
             </div>
 
-            {/* Next in User Queue (Priority 1) */}
+            {/* Next in User Queue (Manual) */}
             {state.userQueue.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <h4 className="text-xs font-bold text-spotify-subdued uppercase tracking-wider">
-                    Next In Queue (Manual)
+                    Next In Queue
                   </h4>
                   <button
                     onClick={() => {
@@ -147,90 +133,40 @@ export default function QueueDrawer({ onClose }: QueueDrawerProps) {
               </div>
             )}
 
-            {/* Next From Smart Mood Radio (Priority 2 when enabled) */}
-            {state.isSmartRadio && state.nextRecommendation && (
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <h4 className="text-xs font-bold text-spotify-green uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Next From Smart Mood Radio</span>
-                  </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-spotify-green border border-emerald-500/30">
-                    {state.nextRecommendation.matchPercentage}% Match
-                  </span>
-                </div>
-
-                <div
-                  onClick={() => playTrack(state.nextRecommendation!.track)}
-                  className="group flex items-center gap-3 p-2.5 rounded-lg bg-emerald-950/20 hover:bg-emerald-900/30 border border-emerald-500/30 transition cursor-pointer"
-                >
-                  <img
-                    src={state.nextRecommendation.track.image}
-                    alt={state.nextRecommendation.track.name}
-                    className="w-12 h-12 rounded object-cover shrink-0 shadow"
-                  />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="font-semibold text-white text-sm truncate group-hover:text-spotify-green transition">
-                      {state.nextRecommendation.track.name}
-                    </span>
-                    <span className="text-xs text-spotify-subdued truncate">
-                      {state.nextRecommendation.track.artists}
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-medium truncate mt-0.5">
-                      ✨ {state.nextRecommendation.primaryReason}
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playTrack(state.nextRecommendation!.track);
-                    }}
-                    className="w-8 h-8 rounded-full bg-spotify-green text-black flex items-center justify-center shadow hover:scale-105 transition shrink-0"
-                    title="Play now"
-                  >
-                    <Play className="w-4 h-4 fill-black ml-0.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Next from Context Queue */}
+            {/* Next Up (Seamlessly populated by backend recommendation and context) */}
             <div>
               <h4 className="text-xs font-bold text-spotify-subdued uppercase tracking-wider mb-2.5">
-                Next from Playlist / Album
+                Next Up
               </h4>
               <div className="flex flex-col gap-1">
-                {state.contextQueue
-                  .filter(t => t.id !== state.currentTrack?.id)
-                  .slice(0, 15)
-                  .map((track) => (
-                    <div
-                      key={track.id}
-                      onClick={() => playTrack(track)}
-                      className="group flex items-center gap-3 p-2 rounded-md hover:bg-white/10 transition cursor-pointer"
-                    >
-                      <img
-                        src={track.image}
-                        alt={track.name}
-                        className="w-10 h-10 rounded object-cover shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="font-semibold text-white truncate group-hover:text-spotify-green">
-                          {track.name}
-                        </span>
-                        <span className="text-xs text-spotify-subdued truncate">
-                          {track.artists}
-                        </span>
-                      </div>
-                      <span className="text-xs text-spotify-subdued">
-                        {track.durationFormatted}
+                {nextUpTracks.slice(0, 20).map((track) => (
+                  <div
+                    key={track.id}
+                    onClick={() => playTrack(track)}
+                    className="group flex items-center gap-3 p-2 rounded-md hover:bg-white/10 transition cursor-pointer"
+                  >
+                    <img
+                      src={track.image}
+                      alt={track.name}
+                      className="w-10 h-10 rounded object-cover shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-white truncate group-hover:text-spotify-green">
+                        {track.name}
+                      </span>
+                      <span className="text-xs text-spotify-subdued truncate">
+                        {track.artists}
                       </span>
                     </div>
-                  ))}
+                    <span className="text-xs text-spotify-subdued">
+                      {track.durationFormatted}
+                    </span>
+                  </div>
+                ))}
 
-                {state.contextQueue.filter(t => t.id !== state.currentTrack?.id).length === 0 && (
+                {nextUpTracks.length === 0 && (
                   <p className="text-xs text-spotify-subdued py-2">
-                    {state.isSmartRadio ? 'Smart Mood Radio will automatically pick matching tracks!' : 'Queue is empty'}
+                    Queue is empty
                   </p>
                 )}
               </div>
